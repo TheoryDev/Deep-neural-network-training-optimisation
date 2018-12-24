@@ -307,7 +307,7 @@ class complexNeuralNetwork:
                 #optimise sg modules
                 tmp = time.perf_counter()
                 if multi == False:
-                    if i % 2 == 0:     
+                    if i % 4 == 0:     
                         #print(i % 2)
                         syn_error += self.optimise_SG_modules(labels)
                 t_opt += time.perf_counter() - tmp        
@@ -319,7 +319,7 @@ class complexNeuralNetwork:
                 t_net += time.perf_counter() - t_in_loop 
                 batch_load_time = time.perf_counter()
                 
-                print("i", i)
+                #'print("i", i)
             
             #add the number of ones/ number of batches to list
             list_ones.append(ones/i)            

@@ -32,6 +32,7 @@ import swiss as sw
 import synthetic as syn
 import parallelNetworks as pa
 import time
+import h5py
 
 
 def main():
@@ -51,9 +52,9 @@ def main():
     torch.manual_seed(11)
     gpu = True
     batch_size = 1
-    E = True
+    E = False
     S = False
-    MNIST = False
+    MNIST = True
     
     if E:
         num_classes = 2
@@ -86,10 +87,24 @@ def main():
         transform = transforms.Compose([transforms.ToTensor()])#, transforms.Normalize((0.1307,), (0.3081,))])
                         #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
     
-        trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                                download=True, transform=transform)
+        #trainset = torchvision.datasets.MNIST(root='./data', train=True,
+                                                #download=True, transform=transform)
+                                                
+        myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='core')
+        coords = myFile.get('MNIST_train_inputs')
+        label = myFile.get('MNIST_train_labels')
+        coords = torch.from_numpy(np.array(coords))
+        label = torch.from_numpy(np.array(label))
+        label = label.long()
+        coords = coords.float()
+        #print("coords:", coords)
+        #print("labels:", label)
+    
+        trainset = torch.utils.data.TensorDataset(coords, label)                                            
+                                                
+                                                
         trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
-                                                  shuffle=True, num_workers=2, pin_memory = True)
+                                                  shuffle=True, num_workers=0, pin_memory = False)
     
         testset = torchvision.datasets.MNIST(root='./data', train=False,
                                                download=True, transform=transform)
@@ -109,18 +124,18 @@ def main():
     
     graph = True
     #-----------hyper parameters
-    learn_rate = 0.5
-    epochs = 100#round(150/2)
+    learn_rate = 0.2
+    epochs = 20#round(150/2)
    
-    f_step = .05
-    N = 256#50 #-note  model will be 2* this
+    f_step = .1
+    N = 8#50 #-note  model will be 2* this
     
     # 0.00005
     alpha_f = 0.001
     alpha_c = 0.00025
     
     gamma = 0.02
-    choice = 'v'
+    choice = 'r'
     begin = 0
     end = 10000#50#000
     

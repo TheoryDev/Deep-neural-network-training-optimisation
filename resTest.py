@@ -8,7 +8,7 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import itertools
 import numpy as np
-
+import h5py
 import ResNet as rn
 
 import time
@@ -43,10 +43,10 @@ def main():
     learn_rate = 0.2
     step = 0.1
     alpha = 0.0001
-    epochs = 5#0#000
+    epochs = 20#0#000
     gpu = True
     
-    N = 4#50
+    N = 16#50
     batch_size = 256#000#60000
     error_func=nn.CrossEntropyLoss()
     
@@ -54,10 +54,25 @@ def main():
     
     transform = transforms.Compose([transforms.ToTensor()])
     
-    trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                            download=download, transform=transform)
+    #rainset = torchvision.datasets.MNIST(root='./data', train=True,
+     #                                       download=download, transform=transform)
+                                          
+   # datasets = []
+    myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='core')
+    coords = myFile.get('MNIST_train_inputs')
+    label = myFile.get('MNIST_train_labels')
+    coords = torch.from_numpy(np.array(coords))
+    label = torch.from_numpy(np.array(label))
+    label = label.long()
+    coords = coords.float()
+    #print("coords:", coords)
+    #print("labels:", label)
+    
+    trainset = torch.utils.data.TensorDataset(coords, label)    
+                                        
+                                            
     trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
-                                              shuffle=True, num_workers=2, pin_memory = True)
+                                              shuffle=True, num_workers=0, pin_memory = False)
     
     testset = torchvision.datasets.MNIST(root='./data', train=False,
                                            download=download, transform=transform)
@@ -80,7 +95,7 @@ def main():
     print("results: ", results)
     print("--- %s seconds ---" % (train_time))
     #print("in_net time", net_t)
-
+    myFile.close()
 if __name__ == '__main__':
     main()
 

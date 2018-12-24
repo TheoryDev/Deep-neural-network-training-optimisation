@@ -129,7 +129,9 @@ class ResNet(nn.Module):
                 #use islice to sample from [begin] to [end] batches
                 for inputs, labels in itertools.islice(trainloader, begin, end):
                     #get batch of input features and convert from (28*28->784 MNIST)                
-                                      
+                    
+                    
+                    
                     if first_round == True:   
                         self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)
                                     
@@ -137,6 +139,11 @@ class ResNet(nn.Module):
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
 
                     inputs = inputs.view(-1, self.num_features)
+                    
+                    #print("inputs", inputs.shape)
+                    #print("labels", labels.shape)
+                    
+                    
                     load_t += time.perf_counter() - batch_t
 
                     t = time.perf_counter()
@@ -175,7 +182,7 @@ class ResNet(nn.Module):
                     t_net += time.perf_counter() - t
                     
                     batch_t = time.perf_counter() 
-                    print("i", i)
+                    #print("i", i)
                     
                 if first_round == True:                 
                    self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)

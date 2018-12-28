@@ -154,6 +154,30 @@ class InMemDataLoader:
                                               , num_workers=num_workers, pin_memory = pin_memory)
             
 
+def getDims(dataset):
+    
+    if dataset == "ELLIPSE":
+        num_classes = 2
+        num_features = 2        
+   
+    if dataset == "SWISS":
+        num_classes = 2
+        num_features = 4
+        
+    if dataset == "MNIST":
+        num_classes = 10
+        num_features = 784
+        
+    if dataset == "CIFAR10":
+        num_classes = 10
+        num_features = 1024 * 3
+        
+    if dataset == "CIFAR100":
+        num_classes = 100
+        num_features = 1024 * 3 
+    
+   
+    return num_features, num_classes
 
 """
 To do 

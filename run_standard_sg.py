@@ -33,7 +33,7 @@ import synthetic as syn
 import parallelNetworks as pa
 import time
 import h5py
-
+import dataloader as dl
 
 def main():
 
@@ -52,66 +52,20 @@ def main():
     torch.manual_seed(11)
     gpu = True
     batch_size = 1
-    E = False
-    S = False
-    MNIST = True
     
-    if E:
-        num_classes = 2
-        num_features = 2
-        myE = el.ellipse(device, 500, 100, a, b)
-        dataset = myE.create_dataset(myE.examples)
-        trainloader = torch.utils.data.DataLoader(dataset, batch_size = 64, shuffle = True)
-        datasetT = myE.create_dataset(myE.valid)
-        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)
-        gpu = False
-    
-    if S:
-        num_classes = 2
-        num_features = 4
-        myS = sw.SwissRoll(device, 500, 0.2)
-        dataset = myS.create_dataset(myS.examples)
-        trainloader = torch.utils.data.DataLoader(dataset, batch_size = 64, shuffle = True)
-        datasetT = myS.create_dataset(myS.valid)
-        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)  
-        gpu = False
-    
-    if MNIST:
-        num_features = 784
-        num_classes = 10
-        batch_size = 256
-        begin = 0
-        end = 100
-        gpu = True
-        
-        transform = transforms.Compose([transforms.ToTensor()])#, transforms.Normalize((0.1307,), (0.3081,))])
+    #, transforms.Normalize((0.1307,), (0.3081,))])
                         #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
     
         #trainset = torchvision.datasets.MNIST(root='./data', train=True,
                                                 #download=True, transform=transform)
-                                                
-        myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='core')
-        coords = myFile.get('MNIST_train_inputs')
-        label = myFile.get('MNIST_train_labels')
-        coords = torch.from_numpy(np.array(coords))
-        label = torch.from_numpy(np.array(label))
-        label = label.long()
-        coords = coords.float()
-        #print("coords:", coords)
-        #print("labels:", label)
+           
+    dataset_name = "CIFAR10" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     
-        trainset = torch.utils.data.TensorDataset(coords, label)                                            
-                                                
-                                                
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
-                                                  shuffle=True, num_workers=0, pin_memory = False)
-    
-        testset = torchvision.datasets.MNIST(root='./data', train=False,
-                                               download=True, transform=transform)
-        testloader = torch.utils.data.DataLoader(testset, batch_size= batch_size,
-                                                 shuffle=False, num_workers=2, pin_memory = True)
-    
-     
+    dataloader = dl.InMemDataLoader(dataset_name)
+        
+    num_features, num_classes = dl.getDims(dataset_name)
+                                  
+    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = True, train = True)     
     
     multilevel = False
     
@@ -162,15 +116,18 @@ def main():
   
     #train_network
     start_time = time.perf_counter()
-    train_time = complexNet.train(trainloader, error_func, learn_rate, epochs, begin, end
+    train_time = complexNet.train(loader, error_func, learn_rate, epochs, begin, end
                      ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph=False)
     end_time = time.perf_counter() - start_time    
      
     print("total time in series:" , end_time)
     #During training, each epoch we see the loss and mse for synthetic gradient
     
-    result_train = complexNet.test(trainloader, begin = 0, end = 10000, f_step = f_step)
-    result_test = complexNet.test(testloader, begin = 0, end = 10000, f_step = f_step)
+    result_train = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
+    
+    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = False)
+    
+    result_test = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
     print("fine train result", result_train, "\n")
     print("fine test result", result_test, "\n")

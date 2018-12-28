@@ -58,7 +58,7 @@ def main():
     reg_c = False
     graph = True
     batch_size = 256
-    gpu = True
+    gpu = False
     alpha_f = 0.01
     alpha_c = 0.01
     

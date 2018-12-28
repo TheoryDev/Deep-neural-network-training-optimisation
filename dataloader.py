@@ -101,7 +101,7 @@ class InMemDataLoader:
         
         
         #put code for Ellipse/Swiss roll
-        if self.dataset == "EllIPSE":
+        if self.dataset == "ELLIPSE":
             a = np.array([[0,1.0],[1.0,2.0]])            
             b = a*0.5                            
             myE = el.ellipse(device, 500, 100, a, b)            

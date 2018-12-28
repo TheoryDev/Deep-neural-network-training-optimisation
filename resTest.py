@@ -10,6 +10,7 @@ import itertools
 import numpy as np
 import h5py
 import ResNet as rn
+import dataloader as dl
 
 import time
 
@@ -43,41 +44,50 @@ def main():
     learn_rate = 0.2
     step = 0.1
     alpha = 0.0001
-    epochs = 20#0#000
+    epochs = 5#0#000
     gpu = True
     
-    N = 16#50
+    N = 4#50
     batch_size = 256#000#60000
     error_func=nn.CrossEntropyLoss()
     
     t_data = time.perf_counter()
     
     transform = transforms.Compose([transforms.ToTensor()])
-    
-    #rainset = torchvision.datasets.MNIST(root='./data', train=True,
-     #                                       download=download, transform=transform)
-                                          
+     
+    #trainset = torchvision.datasets.MNIST(root='./data', train=True,
+                                            #download=download, transform=transform)
+                                         
    # datasets = []
-    myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='core')
-    coords = myFile.get('MNIST_train_inputs')
-    label = myFile.get('MNIST_train_labels')
-    coords = torch.from_numpy(np.array(coords))
-    label = torch.from_numpy(np.array(label))
-    label = label.long()
-    coords = coords.float()
+    #myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='stdio')
+    #coords = myFile.get('MNIST_train_inputs')
+    #label = myFile.get('MNIST_train_labels')
+    
+    #coords = torch.from_numpy(np.array(coords))
+    #label = torch.from_numpy(np.array(label))
+    #label = label.long()
+    #coords = coords.float()
     #print("coords:", coords)
     #print("labels:", label)
+    #myFile.close()
+    #coords = coords.to(device)
+    #label = label.to(device)
+    #trainset = torch.utils.data.TensorDataset(coords, label)    
+    dataset = "MNIST"                                  
+
     
-    trainset = torch.utils.data.TensorDataset(coords, label)    
-                                        
-                                            
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
-                                              shuffle=True, num_workers=0, pin_memory = False)
+    dataloader = dl.InMemDataLoader(dataset)
+                                      
+    trainloader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = True)
     
+    #trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
+                                              #shuffle=True, num_workers=0, pin_memory = False)                
+                                                                                          
     testset = torchvision.datasets.MNIST(root='./data', train=False,
                                            download=download, transform=transform)
     testloader = torch.utils.data.DataLoader(testset, batch_size= batch_size,
                                              shuffle=False, num_workers=2, pin_memory = True)
+    
     print("data time", time.perf_counter() - t_data)  
   
     
@@ -95,7 +105,7 @@ def main():
     print("results: ", results)
     print("--- %s seconds ---" % (train_time))
     #print("in_net time", net_t)
-    myFile.close()
+    #myFile.close()
 if __name__ == '__main__':
     main()
 

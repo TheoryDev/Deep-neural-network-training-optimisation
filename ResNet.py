@@ -100,11 +100,11 @@ class ResNet(nn.Module):
             load_t = 0.0
             forward_t = 0.0
             back_t = 0.0
-            
+            view_t = 0.0
             
             #set up optimiser         
             params = filter(lambda param: param.requires_grad == True, self.parameters())                
-                    
+                 
             directions = copy.deepcopy(self.directions)
             #self.directions = None
             
@@ -118,6 +118,9 @@ class ResNet(nn.Module):
             #create optimiser
             optimiser = optim.SGD(params, lr = learn_rate)
             
+            #for p in self.parameters():
+             #   print(p.requires_grad)
+            
             rounds, losses = [], []
             #train for epochs
             t_net = 0.0
@@ -128,18 +131,19 @@ class ResNet(nn.Module):
                 batch_t = time.perf_counter() 
                 #use islice to sample from [begin] to [end] batches
                 for inputs, labels in itertools.islice(trainloader, begin, end):
-                    #get batch of input features and convert from (28*28->784 MNIST)                
-                    
-                    
+                    #get batch of input features and convert from (28*28->784 MNIST)           
+                   
                     
                     if first_round == True:   
                         self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)
                                     
                     if self.gpu == True:
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
-
-                    inputs = inputs.view(-1, self.num_features)
                     
+                   
+                    tmp_v = time.perf_counter()
+                    inputs = inputs.view(-1, self.num_features)
+                    view_t += time.perf_counter() - tmp_v
                     #print("inputs", inputs.shape)
                     #print("labels", labels.shape)
                     
@@ -149,11 +153,11 @@ class ResNet(nn.Module):
                     t = time.perf_counter()
                     #clear gradient buffers
                     optimiser.zero_grad()                 
-                        
+                    tmp_forward = time.perf_counter()    
                     outputs = self(inputs, f_step)
                    # print("o:", outputs.shape)
                     loss = error_func(outputs, labels)
-
+                    forward_t += time.perf_counter() - tmp_forward
                     #add forward propagation regularisation term
                     if reg_f == True:
                         #reg_loss =  alpha*self.layer_reg(f_step) + alph
@@ -207,6 +211,8 @@ class ResNet(nn.Module):
             print("in_net time", t_net) 
             print("batch_time", load_t)
             print("back_time", back_t)
+            print("forward_time", forward_t)
+            print("view_time", view_t)
             return epoch_loss/epoch_freq
 
         def validation(self, trainloader, start_v = 50000, m ="f_step", min=0.1, max=1.0 ,num = 10

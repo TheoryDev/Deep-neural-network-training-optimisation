@@ -179,7 +179,7 @@ def main():
     #-----------hyper parameters
     learn_rate = 0.2
     step = .05# 0.00005
-    epochs = 100    
+    epochs = 10    
    
     
     alpha_f = 0.02001
@@ -187,7 +187,7 @@ def main():
 
     
     gamma = 0.05
-    choice = 'v'
+    choice = 'r'
 
     begin = 0
     end = 10000

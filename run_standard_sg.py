@@ -2,7 +2,7 @@
 """
 Created on Sun Dec  9 19:38:25 2018
 
-@author: koryz
+@author: Corey
 """
 
 
@@ -125,10 +125,10 @@ def main():
     graph = True
     #-----------hyper parameters
     learn_rate = 0.2
-    epochs = 20#round(150/2)
+    epochs = 5#round(150/2)
    
     f_step = .1
-    N = 8#50 #-note  model will be 2* this
+    N = 64#50 #-note  model will be 2* this
     
     # 0.00005
     alpha_f = 0.001

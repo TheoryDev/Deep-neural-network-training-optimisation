@@ -53,8 +53,7 @@ class complexNeuralNetwork:
             """
             This function creates a single neural network
                                     
-            """
-            
+            """            
             if choice == 'a':
                 print("a")
                 model = anti.AntiSymResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gamma, gpu, last)

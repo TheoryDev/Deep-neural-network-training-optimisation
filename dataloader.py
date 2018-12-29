@@ -142,6 +142,11 @@ class InMemDataLoader:
         features = features.float()
         labels = labels.long()
         
+        
+        #move to device
+        #features = features.to(device)
+        #labels = labels.to(device)
+        
         dataset = torch.utils.data.TensorDataset(features, labels)
         
         return dataset
@@ -181,11 +186,6 @@ def getDims(dataset):
 
 """
 To do 
-    - 1 . load dataset from torch vision
-    - 2 . save in hdf5 format
-    - 3 . re-open in memory
-    - 4 . return dataloader to use in standard PyTorch code
-    
-    - flags if exists
+    add support for transforms
 
 """

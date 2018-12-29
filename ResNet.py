@@ -130,9 +130,11 @@ class ResNet(nn.Module):
                 i = 0              
                 batch_t = time.perf_counter() 
                 #use islice to sample from [begin] to [end] batches
-                for inputs, labels in itertools.islice(trainloader, begin, end):
+                iter_load = iter(trainloader)
+                for i in range(235):
+                #for inputs, labels in itertools.islice(trainloader, begin, end):
                     #get batch of input features and convert from (28*28->784 MNIST)           
-                   
+                    inputs, labels = next(iter_load)
                     
                     if first_round == True:   
                         self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)

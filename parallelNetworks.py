@@ -51,8 +51,7 @@ class complexNeuralNetwork:
     def create_net(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
                    func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01, last=False):    
             """
-            This function creates a single neural network
-                                    
+            This function creates a single neural network                                    
             """            
             if choice == 'a':
                 print("a")
@@ -174,10 +173,8 @@ class complexNeuralNetwork:
             To do, calculate training times
             -add regularisation support at somepoint       
             
-            """
-        
-        return times
-        
+            """        
+        return times        
 
     def optimise_SG_modules(self, y = None, multi=False):
          """
@@ -306,7 +303,7 @@ class complexNeuralNetwork:
                 #optimise sg modules
                 tmp = time.perf_counter()
                 if multi == False:
-                    if i % 4 == 0:     
+                    if i % 2 == 0:     
                         #print(i % 2)
                         syn_error += self.optimise_SG_modules(labels)
                 t_opt += time.perf_counter() - tmp        
@@ -418,7 +415,8 @@ class complexNeuralNetwork:
         #print("sg_mod_b", self.__sgmodules[0].get_coefs())              
         
         #init sg - the last batches' labels were stored in the sg module
-        self.optimise_SG_modules(multi=True)
+        # not needed for new sg module
+        #self.optimise_SG_modules(multi=True)
                 
     def double_complex_net(self):    
         

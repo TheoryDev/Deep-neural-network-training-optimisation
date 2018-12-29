@@ -50,7 +50,7 @@ def main():
     
     np.random.seed(11)
     torch.manual_seed(11)
-    gpu = True
+    gpu = False
     batch_size = 1
     
     #, transforms.Normalize((0.1307,), (0.3081,))])
@@ -59,7 +59,7 @@ def main():
         #trainset = torchvision.datasets.MNIST(root='./data', train=True,
                                                 #download=True, transform=transform)
            
-    dataset_name = "CIFAR10" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    dataset_name = "SWISS" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     
     dataloader = dl.InMemDataLoader(dataset_name)
         

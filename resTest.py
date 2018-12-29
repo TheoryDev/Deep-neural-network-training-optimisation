@@ -44,10 +44,10 @@ def main():
     learn_rate = 0.2
     step = 0.1
     alpha = 0.0001
-    epochs = 5#0#000
+    epochs = 50#0#000
     gpu = True
     
-    N = 4#50
+    N = 128#50
     batch_size = 256#000#60000
     error_func=nn.CrossEntropyLoss()
     
@@ -78,7 +78,7 @@ def main():
     
     dataloader = dl.InMemDataLoader(dataset)
                                       
-    trainloader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = True)
+    trainloader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = True, train = True)
     
     #trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
                                               #shuffle=True, num_workers=0, pin_memory = False)                

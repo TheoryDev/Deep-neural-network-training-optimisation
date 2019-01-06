@@ -60,10 +60,10 @@ def main():
     graph = True    
     
     #-----------hyper parameters
-    N = 2#-note  model will be 2* this 
-    learn_rate = 0.5
-    f_step = 0.25
-    epochs = 2    
+    N = 4#-note  model will be 2* this 
+    learn_rate = 0.1
+    f_step = 0.1
+    epochs = 5    
       
     gamma = 0.02    
     begin = 0

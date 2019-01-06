@@ -161,6 +161,8 @@ class InMemDataLoader:
 
 def getDims(dataset):
     
+    in_channels = 1
+    
     if dataset == "ELLIPSE":
         num_classes = 2
         num_features = 2        
@@ -175,14 +177,15 @@ def getDims(dataset):
         
     if dataset == "CIFAR10":
         num_classes = 10
-        num_features = 1024 * 3
+        num_features = 1024 
+        in_channels = 3
         
     if dataset == "CIFAR100":
         num_classes = 100
-        num_features = 1024 * 3 
-    
+        num_features = 1024  
+        in_channels = 3
    
-    return num_features, num_classes
+    return num_features, num_classes, in_channels
 
 
 

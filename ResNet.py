@@ -15,7 +15,8 @@ class ResNet(nn.Module):
     #use super to initialise the base class ClassName(object):
         """ The ResNet class inherits from the nn.Module class.
         """
-        def __init__(self, device, N, num_features, num_classes, func_f, func_c, weights = None, bias = None, gpu=False, last=True, sg=False, n_filters = 6):
+        def __init__(self, device, N, num_features, num_classes, func_f, func_c, weights = None, bias = None, 
+                     gpu=False, last=True, conv=False, first = True, in_chns=1, n_filters = 6):
             """
             It is initialised with
             N - number of layers
@@ -41,48 +42,44 @@ class ResNet(nn.Module):
             self.mu = None
             self.last = False
             self.n_filters = n_filters
-            #add N layers
-            
-            for i in range(0, N):
-                if gpu == False:
-                    self.layers.append(nn.Linear(num_features, num_features))#, requires_grad = requires_grad))
-                    #allows for choosing initial weights manually
-                    if (weights is not None) and (bias is not None):
-                        self.layers[i].weight = torch.nn.Parameter(weights)
-                        self.layers[i].bias = torch.nn.Parameter(bias)
-                else:
-                    if len(self.layers) == 0:
-                        self.layers.append(nn.Conv2d(1,n_filters,3, padding=1))
-                    self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))                    
-            #if last == True:
-            if gpu == True:
-                if last == True:
-                    if sg == True:
-                        self.layers[0]  =  nn.Conv2d(6,6,3, padding=1) 
-                    self.classifier = nn.Linear(num_features*6,num_classes) 
-                #need to be able to take 6 input channels
-                #self.layers[0]  =  nn.Conv2d(6,6,3, padding=1)   
-            else:
-                if last == True:
-                    self.classifier = nn.Linear(num_features,num_classes)    
-            
-            #classifier
-            #if last == True:
-                #self.classifier = nn.Linear(num_features,num_classes)
+            self.in_chns = in_chns
+            self.first=first            
             self.last = last
-            self.gpu = gpu
-            #if gpu == True:
-                          
-            
-
+            self.gpu = gpu   
+            self.conv = conv
+            #add N layers          
+           
+            #init layers for CNN
+            if conv == True:
+                if first == True:
+                    self.firstMask = nn.Conv2d(in_chns,n_filters,3, padding=1) 
+                for i in range(0, N):                    
+                    self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))
+                #classifier
+                if last == True:
+                    self.classifier = nn.Linear(num_features*n_filters,num_classes) 
+            #init layers for FCN
+            else:
+                for i in range(0, N):
+                    self.layers.append(nn.Linear(num_features, num_features))
+                #classifier  
+                if last == True:                  
+                    self.classifier = nn.Linear(num_features,num_classes)            
+               
+                       
         def forward(self, x, step=0.1, plot=False):
-            #forward propagation
+            #forward propagationelf.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1)
             i = 0    
-                     
+            #print(i, x.shape)        
             self.props = x
+            
+            if self.conv and self.first:
+                x = self.func_f(self.firstMask(x))            
+            
             #self.step = step
             for layer in self.layers:
                 if self.directions == None or layer.weight.requires_grad == True:
+                    #print(self.func_f(layer(x)).shape)
                     x = x + step*self.func_f(layer(x))
                 else:
                     w , b = self.directions[i]                
@@ -96,8 +93,8 @@ class ResNet(nn.Module):
             self.final = x.detach().to(torch.device("cpu")).numpy()
             #classifier 
             if self.last == True:
-                if self.gpu  == True:
-                      x = x.view(-1, self.num_features*6)
+                if self.conv == True:
+                      x = x.view(-1, self.num_features*self.n_filters)
                 x = self.func_c(self.classifier(x), dim = 1)
             #print("xs", x.shape)
             return x
@@ -152,7 +149,7 @@ class ResNet(nn.Module):
                 i = 0              
                 batch_t = time.perf_counter() 
                 #use islice to sample from [begin] to [end] batches
-                iter_load = iter(trainloader)
+                #iter_load = iter(trainloader)
                 #for i in range(235):
                 for inputs, labels in itertools.islice(trainloader, begin, end):
                     #get batch of input features and convert from (28*28->784 MNIST)           
@@ -163,25 +160,26 @@ class ResNet(nn.Module):
                                     
                     if self.gpu == True:
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
+                        torch.cuda.synchronize()
                     
-                    else:
-                   
+                    if self.conv == False:                   
                         tmp_v = time.perf_counter()
                         inputs = inputs.view(-1, self.num_features)
                         view_t += time.perf_counter() - tmp_v
                     #print("inputs", inputs.shape)
-                    #print("labels", labels.shape)
-                    
+                    #print("labels", labels.shape)                    
                     
                     load_t += time.perf_counter() - batch_t
-
+                  
                     t = time.perf_counter()
                     #clear gradient buffers
-                    optimiser.zero_grad()                 
+                    optimiser.zero_grad()     
+                    torch.cuda.synchronize()
                     tmp_forward = time.perf_counter()    
                     outputs = self(inputs, f_step)
                    # print("o:", outputs.shape)
                     loss = error_func(outputs, labels)
+                    torch.cuda.synchronize()
                     forward_t += time.perf_counter() - tmp_forward
                     #add forward propagation regularisation term
                     if reg_f == True:
@@ -193,6 +191,7 @@ class ResNet(nn.Module):
                   #  print("before backward")
                   #  for p in params:
                   #      print(p)
+                    torch.cuda.synchronize()
                     tmp_b = time.perf_counter()
                     #calculate the gradients for the backpropagations
                     loss.backward()
@@ -205,6 +204,7 @@ class ResNet(nn.Module):
                 #    print("after optimiser step")             
                  #   for p in params:
                  #       print(p)
+                    torch.cuda.synchronize()
                     back_t += time.perf_counter() - tmp_b
                     epoch_loss += loss.item()
                     i += 1
@@ -223,9 +223,8 @@ class ResNet(nn.Module):
                 if graph == True:
                     #make more sophisticated
                     losses.append(epoch_loss/epoch_freq)
-                    rounds.append(epoch)
-                
-                
+                    rounds.append(epoch)               
+               
 
             if graph == True:
                 plt.plot(rounds, losses, '-')
@@ -294,7 +293,7 @@ class ResNet(nn.Module):
 
                 if self.gpu == True:
                     inputs, labels = inputs.to(self.device), labels.to(self.device)
-                else:
+                if self.conv == False:
                     #convert to vector
                     inputs = inputs.view(-1, self.num_features)
                 #propagate through network

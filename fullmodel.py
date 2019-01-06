@@ -38,7 +38,7 @@ import Verlet as ver
 import dataloader
 
 def main():
-    
+    #torch.set_num_threads(2)
     #preliminaires
     np.random.seed(11)
     torch.manual_seed(11)
@@ -47,20 +47,22 @@ def main():
     
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
-    choice = "r" # "v"
+    choice = "v" # "v"
+    gpu = True
+    conv = True
     
     #hyper parameters
     N = 4
     learn_rate = 0.1#0.05
-    step = .75
+    step = .05
     epochs = 2
     begin = 0
-    end = 10000
+    end = 10#000
     reg_f = False
     reg_c = False
     graph = True
-    batch_size = 256
-    gpu = True
+    batch_size = 64
+    
     alpha_f = 0.01
     alpha_c = 0.01
     
@@ -70,7 +72,7 @@ def main():
     #load trainset
     
     
-    model = chooseModel(dataset_name, device, N, func_f, func_c, gpu, choice)    
+    model = chooseModel(dataset_name, device, N, func_f, func_c, gpu, choice, conv=conv, first=True)    
     
     dataloader = dl.InMemDataLoader(dataset_name)
                                       
@@ -78,9 +80,10 @@ def main():
     #train
     if gpu == True:
         model.to(device)
-    
+        torch.cuda.synchronize()
     train_time = time.perf_counter()
     model.train(loader, error_func, learn_rate, epochs, begin, end, step, reg_f, alpha_f, reg_c, alpha_c, graph)
+    torch.cuda.synchronize()
     train_time = time.perf_counter() - train_time
     
     result_train = model.test(loader, begin = 0, end = 10000, f_step = step)
@@ -95,21 +98,24 @@ def main():
 
     print("--- %s seconds ---" % (train_time))
 
-def chooseModel(dataset, device, N, func_f, func_c, gpu, choice):
+def chooseModel(dataset, device, N, func_f, func_c, gpu, choice, last=True,  
+                conv=False, first = True, in_chns=1, n_filters = 6):
     
     last = True
     
-    num_features, num_classes = dataloader.getDims(dataset)
+    num_features, num_classes, in_channels = dataloader.getDims(dataset)
     
     weights, bias = None, None
     
     if choice == 'v':
                 print("v")
-                model = ver.Verlet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last)
+                model = ver.Verlet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
+                                   , conv, first, in_chns, n_filters)
     
     else:
                 print("r")
-                model = res.ResNet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last)
+                model = res.ResNet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
+                                   , conv, first, in_chns, n_filters)
     
     return model
     

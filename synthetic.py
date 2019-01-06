@@ -47,7 +47,7 @@ class LinearRegressionSG(nn.Module):
         super(LinearRegressionSG, self).__init__()
         self.gpu = gpu
         if self.gpu == True:
-            self.linear = nn.Conv2d(7,6, 3, padding=1)    
+            self.linear = nn.Conv2d(16,6, 3, padding=1, groups=2)    
         else:
             self.linear = nn.Linear(num_features+1, num_features)
         
@@ -114,7 +114,7 @@ class synthetic_module:
     def calculate_sg(self, h, y,func=sg):
         
        if self.__gpu == True:
-           tmp_y = self.convLabels(y, h[0][0].shape, 10).to(self.__device)
+           tmp_y = self.convLabels(y, h[0][0].shape, 10)#.to(self.__device)
        else:
            tmp_y = y.reshape((len(y),1)).float()  
        #reshape labels y
@@ -146,14 +146,14 @@ class synthetic_module:
         if multi == True:           
             self.__h_before.backward(self.__h_after.grad)
             return
-        
+        self.zero_optimiser() 
         #ecalculate synthetic gradient        
-        syn_grad = self.calculate_sg(self.__h_before, y)
+        self.syn_grad = self.calculate_sg(self.__h_before, y)
         #print(syn_grad)
         #backpropagate synthetic gradient into sub-nn
         #print("hs", self.__h_before.shape)
         #print("sg", syn_grad)        
-        self.__h_before.backward(syn_grad)
+        self.__h_before.backward(self.syn_grad)
         
     def optimise(self, y, multi=False):
         """
@@ -161,15 +161,15 @@ class synthetic_module:
         It obtains the gradient dL/dh^n from the h_after instance attribute. 
         It then calls the optimise function.        
         """       
-        self.zero_optimiser() 
-        pred = self.calculate_sg(self.__h_before.detach(), y)          
+        #self.zero_optimiser() 
+        #pred = self.calculate_sg(self.__h_before.detach(), y)          
                       
         #get real gradient       
         grad = self.__h_after.grad.data
         #optimise gradient
        
         error_func = nn.MSELoss()#(pred ,grad)
-        loss = error_func(pred, grad)
+        loss = error_func(self.syn_grad, grad)
         
         #regularisation - may use in future
         # = 0.0
@@ -202,11 +202,11 @@ class synthetic_module:
     
     def convLabels(self, labels, y_shape = (28, 28), num_classes=10):
         batch_size = labels.shape[0]
-        convLabels = torch.zeros(batch_size, 1, *y_shape).to(self.__device)
+        convLabels = torch.zeros(batch_size, 10, *y_shape)#.to(self.__device)
         for i in range(batch_size):
-            convLabels[i] += labels[i].float()/num_classes
+            convLabels[i][labels[i]] += 1
         
-        return convLabels
+        return convLabels.to(self.__device)
         
 
     

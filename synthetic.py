@@ -43,9 +43,13 @@ class LinearRegressionSG(nn.Module):
     prediction. It uses the tanh activation function.
     """
     
-    def __init__(self, num_features):
+    def __init__(self, num_features, gpu=True):
         super(LinearRegressionSG, self).__init__()
-        self.linear = nn.Linear(num_features+1, num_features)
+        self.gpu = gpu
+        if self.gpu == True:
+            self.linear = nn.Conv2d(7,6, 3, padding=1)    
+        else:
+            self.linear = nn.Linear(num_features+1, num_features)
         
     def forward(self, x):
         x = self.linear(x)
@@ -60,13 +64,17 @@ class synthetic_module:
         The initialisation takes a function and its arguments and and
         an optimiser and its arguments.
         """
+        #if self.gpu == True:
+            #num_features *= 6
+            
+        self.__num_features = num_features
         self.__function = function
         self.__loss = loss
         self.__args = args  
         self.__lin = linear_model.LinearRegression(normalize=False)
         self.__device = device
         self.__gpu = gpu
-        self.__linSG = LinearRegressionSG(num_features)
+        self.__linSG = LinearRegressionSG(num_features, gpu)
         if self.__gpu == True:
             self.__linSG.to(device)
         
@@ -104,11 +112,19 @@ class synthetic_module:
         
     
     def calculate_sg(self, h, y,func=sg):
+        
+       if self.__gpu == True:
+           tmp_y = self.convLabels(y, h[0][0].shape, 10).to(self.__device)
+       else:
+           tmp_y = y.reshape((len(y),1)).float()  
        #reshape labels y
-       tmp_y = y.reshape((len(y),1))
-       x =  torch.cat((h.detach(), tmp_y.float()), dim=1)        
+       tmp_h = h.detach()       
+       x =  torch.cat((tmp_h, tmp_y), dim=1)        
        #get prediction
        pred = self.__linSG(x) 
+       
+       #if self.__gpu == True:
+           #pred = pred.reshape(h_shape)       
        return pred    
       
            
@@ -133,7 +149,10 @@ class synthetic_module:
         
         #ecalculate synthetic gradient        
         syn_grad = self.calculate_sg(self.__h_before, y)
+        #print(syn_grad)
         #backpropagate synthetic gradient into sub-nn
+        #print("hs", self.__h_before.shape)
+        #print("sg", syn_grad)        
         self.__h_before.backward(syn_grad)
         
     def optimise(self, y, multi=False):
@@ -165,8 +184,7 @@ class synthetic_module:
         #update weights
         self.__opt.step()
        
-        return loss.data.float()
-       
+        return loss.data.float()       
 
     def first_optimise(self, num_features = 2, num_classes = 2, batch_size=10):
         """
@@ -180,8 +198,17 @@ class synthetic_module:
         grad = np.random.normal(size=(batch_size, num_features))
         self.__lin.fit(np.concatenate((h,y), axis=1), grad)
         
-       # print("coefficients",self.__lin.coef_.shape)        
+       # print("coefficients",self.__lin.coef_.shape)       
     
+    def convLabels(self, labels, y_shape = (28, 28), num_classes=10):
+        batch_size = labels.shape[0]
+        convLabels = torch.zeros(batch_size, 1, *y_shape).to(self.__device)
+        for i in range(batch_size):
+            convLabels[i] += labels[i].float()/num_classes
+        
+        return convLabels
+        
+
     
 def main():
     y = np.array([[0.,1.],[0.6,0.8]])

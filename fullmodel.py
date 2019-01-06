@@ -35,7 +35,7 @@ import h5py
 import dataloader as dl
 import ResNet as res
 import Verlet as ver
-
+import dataloader
 
 def main():
     
@@ -45,20 +45,22 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     
-    dataset_name = "CIFAR10" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-   
+    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    #choose model
+    choice = "r" # "v"
+    
     #hyper parameters
     N = 4
-    learn_rate = 0.5
-    step = 0.25    
-    epochs = 25    
+    learn_rate = 0.1#0.05
+    step = .75
+    epochs = 2
     begin = 0
     end = 10000
     reg_f = False
     reg_c = False
     graph = True
     batch_size = 256
-    gpu = False
+    gpu = True
     alpha_f = 0.01
     alpha_c = 0.01
     
@@ -67,13 +69,12 @@ def main():
     func_c = F.softmax
     #load trainset
     
-    #choose model
-    choice = "r" # "v"
+    
     model = chooseModel(dataset_name, device, N, func_f, func_c, gpu, choice)    
     
     dataloader = dl.InMemDataLoader(dataset_name)
                                       
-    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = True, train = True)         
+    loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)         
     #train
     if gpu == True:
         model.to(device)

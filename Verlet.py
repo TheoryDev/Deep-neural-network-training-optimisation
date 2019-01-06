@@ -19,10 +19,12 @@ class Verlet(res.ResNet):
         """
         #use the ResNet superclass initialisation
         super(Verlet, self).__init__(device, N, num_features, num_classes, func_f, func_c, weights = weights, bias = bias, gpu = gpu, last=last)
-
+        #elf.first_layer = 
 
     def forward(self, x, step=0.1, plot=False):
         i = 0
+        x = self.layers[0](x)
+        print(x.shape)
         z_minus = torch.zeros(x.shape)
         if self.gpu == True:
             z_minus = z_minus.to(self.device)
@@ -45,11 +47,24 @@ class Verlet(res.ResNet):
         self.final = x.detach().to(torch.device("cpu")).numpy()     
         
         if self.last == True:
+            if self.gpu == True:
+                x = x.view(-1, self.num_features)
             x = self.func_c(self.classifier(x), dim = 1)
     
         return x
 
     def z_sum(self, x, layer, direction = None):
+        
+        #if self.gpu == True:
+            #transConv = nn.Conv2d(6,6,3, padding=1)#.to(self.device)
+            #print("shape", transConv.weight.shape)
+            #print("w", transConv.weight)
+            #print(layer.weight.transpose(1,0))
+            #transConv.weight = nn.Parameter(layer.weight.transpose(1,0))
+            #transConv.bias = layer.bias
+            #return transConv(x)
+                
+        
         K = layer.weight.transpose(1,0)
         b = layer.bias
 
@@ -59,3 +74,4 @@ class Verlet(res.ResNet):
             b = b + delb
 
         return torch.matmul(x,K) + b
+        

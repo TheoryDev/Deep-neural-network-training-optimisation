@@ -5,7 +5,6 @@ Created on Sun Dec  9 19:38:25 2018
 @author: Corey
 """
 
-
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -19,7 +18,6 @@ import scipy as sp
 from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error as mse
 import itertools
-
 
 #dnn codebase
 import ResNet as res
@@ -42,61 +40,48 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     #---------------training data--------------------
-    #ellipse dimensions
-    a = np.array([[0,0.1],[0.1,0.2]])
-    #    b = [[0,0.3],[0.6,1.2]]
-    a = a*10
-    b = a*0.5
-    
+      
     np.random.seed(11)
     torch.manual_seed(11)
-    gpu = False
-    batch_size = 1
+    gpu = True
+    batch_size = 256
+              
+    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    choice = 'r'
     
-    #, transforms.Normalize((0.1307,), (0.3081,))])
-                        #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
-    
-        #trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                                #download=True, transform=transform)
-           
-    dataset_name = "SWISS" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-    
-    dataloader = dl.InMemDataLoader(dataset_name)
-        
-    num_features, num_classes = dl.getDims(dataset_name)
-                                  
-    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = True, train = True)     
-    
-    multilevel = False
-    
-    #neural net parameters---------------------------------------------------------
+     #neural net parameters---------------------------------------------------------
     
     weights = None
     bias = None  
     reg_f = False
-    reg_c = False
-    
-    graph = True
-    #-----------hyper parameters
-    learn_rate = 0.2
-    epochs = 5#round(150/2)
-   
-    f_step = .1
-    N = 64#50 #-note  model will be 2* this
-    
-    # 0.00005
+    reg_c = False   
     alpha_f = 0.001
     alpha_c = 0.00025
+    graph = True    
     
-    gamma = 0.02
-    choice = 'r'
+    #-----------hyper parameters
+    N = 2#-note  model will be 2* this 
+    learn_rate = 0.5
+    f_step = 0.25
+    epochs = 2    
+      
+    gamma = 0.02    
     begin = 0
     end = 10000#50#000
     
     #batch_size = 64
     func_f = torch.tanh
     func_c = F.softmax    
-    error_func = nn.CrossEntropyLoss()
+    error_func = nn.CrossEntropyLoss()       
+    
+    dataloader = dl.InMemDataLoader(dataset_name)
+        
+    num_features, num_classes = dl.getDims(dataset_name)
+                                  
+    loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
+    
+    multilevel = False    
+   
     #------------------------------------------------------------------------------
     #-------------------sg parameters--------------------------
     sg_func = syn.sgLoss
@@ -117,7 +102,7 @@ def main():
     #train_network
     start_time = time.perf_counter()
     train_time = complexNet.train(loader, error_func, learn_rate, epochs, begin, end
-                     ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph=False)
+                     ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph)
     end_time = time.perf_counter() - start_time    
      
     print("total time in series:" , end_time)

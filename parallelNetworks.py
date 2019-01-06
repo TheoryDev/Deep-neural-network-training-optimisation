@@ -46,32 +46,33 @@ class complexNeuralNetwork:
         self.__device = device
         self.__error_func = nn.CrossEntropyLoss
         self.__gpu = gpu       
-        print("gpu:", self.__gpu)
+        #print("gpu:", self.__gpu)
         
     def create_net(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
-                   func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01, last=False):    
+                   func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01, last=False, sg=True):    
             """
             This function creates a single neural network                                    
             """            
             if choice == 'a':
                 print("a")
-                model = anti.AntiSymResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gamma, gpu, last)
+                model = anti.AntiSymResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gamma, gpu, last, sg)
     
             elif choice == 'v':
                 print("v")
-                model = ver.Verlet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias,  gpu, last)
+                model = ver.Verlet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias,  gpu, last, sg)
     
             elif choice == 'l':
                 print("l")
-                model = lp.Leapfrog(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last)
+                model = lp.Leapfrog(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last, sg)
     
             else:
                 print("r")
-                model = res.ResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last)
+                model = res.ResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last, sg)
     
             return model
     
     def create_sg(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), gpu=False, num_features=2):
+        #print("gpu in ", gpu)
         return syn.synthetic_module(self.__device, function, loss, args, gpu, num_features)
     
     def init_nets(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
@@ -95,7 +96,8 @@ class complexNeuralNetwork:
             
     def init_sgs(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), 
                  num_features=2, batch_size=2):#, trainloader):  
-        #store synthetic gradient module arguments
+        #store synthetic gradient module arguments            
+        
         self.__sgArgs = (function, loss, args, self.__gpu, num_features)
     
         #add sg modules           
@@ -245,8 +247,9 @@ class complexNeuralNetwork:
                 #if gpu is being used move tensors to gpu memory
                 if self.__gpu == True:
                         inputs, labels = inputs.to(self.__device), labels.to(self.__device)
-                      
-                inputs = inputs.view(-1, self.__nnets[0].num_features)        
+                
+                else:
+                    inputs = inputs.view(-1, self.__nnets[0].num_features)        
             
                 m_load += time.perf_counter() - batch_load_time
                 t_in_loop = time.perf_counter()
@@ -262,7 +265,7 @@ class complexNeuralNetwork:
                 #propagate   
                 tmp = time.perf_counter()
                 out = self.propagate(inputs, f_step)             
-                #print("out", out)                       
+                #print("out", out.shape)                       
                 #--------------------can add regularisation later----------------
                 
                 #calculate loss
@@ -302,14 +305,10 @@ class complexNeuralNetwork:
             
                 #optimise sg modules
                 tmp = time.perf_counter()
-                if multi == False:
-                    if i % 2 == 0:     
-                        #print(i % 2)
-                        syn_error += self.optimise_SG_modules(labels)
+                if multi == False:                    
+                    syn_error += self.optimise_SG_modules(labels)
                 t_opt += time.perf_counter() - tmp        
-                epoch_loss += loss.item()
-               
-                
+                epoch_loss += loss.item()               
                 
                 i += 1
                 t_net += time.perf_counter() - t_in_loop 
@@ -359,10 +358,7 @@ class complexNeuralNetwork:
         print("t_out" ,t_out)
         print("t_first", t_first)
         print("t_opt", t_opt)
-        print("loss_t", t_loss)
-    
-        
-        
+        print("loss_t", t_loss)       
         
         return master_t, theoretical_time, master_t/theoretical_time, adjust_speed_up
         #test training accuracy of full network     
@@ -376,8 +372,9 @@ class complexNeuralNetwork:
 
             if self.__gpu == True:
                 inputs, labels = inputs.to(self.__device), labels.to(self.__device)
-            #convert to vector
-            inputs = inputs.view(-1, self.__nnets[0].num_features)
+            else:
+                #convert to vector
+                inputs = inputs.view(-1, self.__nnets[0].num_features)
             #propagate through network          
             #print("in", inputs)           
             outputs = self.propagate(inputs, step = f_step, train=False)
@@ -425,34 +422,11 @@ class complexNeuralNetwork:
         for net in self.__nnets:
             net.double_layers()
             if self.__gpu == True:
-                net.to(self.__device)
-       
-        
-    #def multilevel_learn()
-        """
-        Trains the coarse network.
-        ---- sg init to do --- need way to get gradients at the midpoint
-        Then network is split in half and the weights are prolongated
-        to initialise the first and second sub-neural networks
-        
-        """
-        
-        """
-        #1.create network with N/2 layers
-        #2.train it to a good level of accuracy say 90%
-        #3.get 1000 h^n, y and grad values for middle layer of network
-        #4.use those values to initialise sg
-        #5. initialise networks using weights from coarse network
-        # delete network for coarse to save memory
-        #6. train and test complex network
-      
-        NOTE - I can do module every layer by simply adding setting N=1 and choosing M as the number of layers
-        """
-            
+                net.to(self.__device)       
+  
 """
 To do - add saving networks      
-      - can add regularisation one week off
-     
+      - add regularisation
 """
 
          

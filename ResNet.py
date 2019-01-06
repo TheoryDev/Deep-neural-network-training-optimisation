@@ -15,7 +15,7 @@ class ResNet(nn.Module):
     #use super to initialise the base class ClassName(object):
         """ The ResNet class inherits from the nn.Module class.
         """
-        def __init__(self, device, N, num_features, num_classes, func_f, func_c, weights = None, bias = None, gpu=False, last=True):
+        def __init__(self, device, N, num_features, num_classes, func_f, func_c, weights = None, bias = None, gpu=False, last=True, sg=False, n_filters = 6):
             """
             It is initialised with
             N - number of layers
@@ -40,25 +40,45 @@ class ResNet(nn.Module):
             self.directions = None
             self.mu = None
             self.last = False
+            self.n_filters = n_filters
             #add N layers
+            
             for i in range(0, N):
-                self.layers.append(nn.Linear(num_features, num_features))#, requires_grad = requires_grad))
-                #allows for choosing initial weights manually
-                if (weights is not None) and (bias is not None):
-                    self.layers[i].weight = torch.nn.Parameter(weights)
-                    self.layers[i].bias = torch.nn.Parameter(bias)
-
+                if gpu == False:
+                    self.layers.append(nn.Linear(num_features, num_features))#, requires_grad = requires_grad))
+                    #allows for choosing initial weights manually
+                    if (weights is not None) and (bias is not None):
+                        self.layers[i].weight = torch.nn.Parameter(weights)
+                        self.layers[i].bias = torch.nn.Parameter(bias)
+                else:
+                    if len(self.layers) == 0:
+                        self.layers.append(nn.Conv2d(1,n_filters,3, padding=1))
+                    self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))                    
+            #if last == True:
+            if gpu == True:
+                if last == True:
+                    if sg == True:
+                        self.layers[0]  =  nn.Conv2d(6,6,3, padding=1) 
+                    self.classifier = nn.Linear(num_features*6,num_classes) 
+                #need to be able to take 6 input channels
+                #self.layers[0]  =  nn.Conv2d(6,6,3, padding=1)   
+            else:
+                if last == True:
+                    self.classifier = nn.Linear(num_features,num_classes)    
+            
             #classifier
-            if last == True:
-                self.classifier = nn.Linear(num_features,num_classes)
-                self.last = last
+            #if last == True:
+                #self.classifier = nn.Linear(num_features,num_classes)
+            self.last = last
             self.gpu = gpu
-
+            #if gpu == True:
+                          
+            
 
         def forward(self, x, step=0.1, plot=False):
             #forward propagation
-            i = 0
-
+            i = 0    
+                     
             self.props = x
             #self.step = step
             for layer in self.layers:
@@ -76,8 +96,10 @@ class ResNet(nn.Module):
             self.final = x.detach().to(torch.device("cpu")).numpy()
             #classifier 
             if self.last == True:
+                if self.gpu  == True:
+                      x = x.view(-1, self.num_features*6)
                 x = self.func_c(self.classifier(x), dim = 1)
-      
+            #print("xs", x.shape)
             return x
 
             #can assign weights to nn.CrossEntropyLoss in the case of unbalanced training sets
@@ -131,10 +153,10 @@ class ResNet(nn.Module):
                 batch_t = time.perf_counter() 
                 #use islice to sample from [begin] to [end] batches
                 iter_load = iter(trainloader)
-                for i in range(235):
-                #for inputs, labels in itertools.islice(trainloader, begin, end):
+                #for i in range(235):
+                for inputs, labels in itertools.islice(trainloader, begin, end):
                     #get batch of input features and convert from (28*28->784 MNIST)           
-                    inputs, labels = next(iter_load)
+                    #inputs, labels = next(iter_load)
                     
                     if first_round == True:   
                         self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)
@@ -142,10 +164,11 @@ class ResNet(nn.Module):
                     if self.gpu == True:
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
                     
+                    else:
                    
-                    tmp_v = time.perf_counter()
-                    inputs = inputs.view(-1, self.num_features)
-                    view_t += time.perf_counter() - tmp_v
+                        tmp_v = time.perf_counter()
+                        inputs = inputs.view(-1, self.num_features)
+                        view_t += time.perf_counter() - tmp_v
                     #print("inputs", inputs.shape)
                     #print("labels", labels.shape)
                     
@@ -271,8 +294,9 @@ class ResNet(nn.Module):
 
                 if self.gpu == True:
                     inputs, labels = inputs.to(self.device), labels.to(self.device)
-                #convert to vector
-                inputs = inputs.view(-1, self.num_features)
+                else:
+                    #convert to vector
+                    inputs = inputs.view(-1, self.num_features)
                 #propagate through network
                 outputs = self(inputs, step = f_step)
 

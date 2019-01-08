@@ -43,11 +43,13 @@ def main():
       
     np.random.seed(11)
     torch.manual_seed(11)
-    gpu = True
-    batch_size = 256
+   
+    
               
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
+    conv= False
+    gpu = True
     
      #neural net parameters---------------------------------------------------------
     
@@ -60,10 +62,11 @@ def main():
     graph = True    
     
     #-----------hyper parameters
+    batch_size = 64
     N = 4#-note  model will be 2* this 
     learn_rate = 0.1
-    f_step = 0.1
-    epochs = 5    
+    f_step = 1
+    epochs = 2   
       
     gamma = 0.02    
     begin = 0
@@ -76,12 +79,11 @@ def main():
     
     dataloader = dl.InMemDataLoader(dataset_name)
         
-    num_features, num_classes = dl.getDims(dataset_name)
+    num_features, num_classes, in_channels = dl.getDims(dataset_name)
                                   
     loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
     
-    multilevel = False    
-   
+    multilevel = False       
     #------------------------------------------------------------------------------
     #-------------------sg parameters--------------------------
     sg_func = syn.sgLoss
@@ -90,11 +92,11 @@ def main():
     #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
     
     #init complex network
-    complexNet = pa.complexNeuralNetwork(device, M, gpu)
+    complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     
     #init sub-neural networks
     complexNet.init_nets(N, num_features, num_classes, func_f, func_c, weights, bias,
-                         gpu, choice, gamma, multilevel)
+                         choice, gamma, multilevel)
         
     #init SG modules
     complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)  

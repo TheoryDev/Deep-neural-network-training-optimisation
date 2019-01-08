@@ -40,8 +40,10 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")     
     torch.manual_seed(11)    
     np.random.seed(11)
-    gpu = False    
-            
+    gpu = True  
+    conv = True  
+    dataset_name = "MNIST"
+    
     multilevel = True
     
     #neural net parameters---------------------------------------------------------    
@@ -50,15 +52,16 @@ def main():
     reg_f = False
     reg_c = False    
     graph = True
+    
     #-----------hyper parameters
     batch_size = 64
     #-note coarse model will be 2* this, fine model with be 4* this    
-    N = 128
+    N = 1
     learn_rate_c = .5
     f_step_c = .2
     learn_rate_f = .2
     f_step_f = .1
-    epochs = 250
+    epochs = 10
       
     # 0.00005
     alpha_f = 0.001
@@ -68,11 +71,11 @@ def main():
     begin = 0
     end = 10000  
            
-    dataset_name = "SWISS" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+     # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     
     dataloader = dl.InMemDataLoader(dataset_name)
         
-    num_features, num_classes = dl.getDims(dataset_name)
+    num_features, num_classes, in_channels = dl.getDims(dataset_name)
                                   
     loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
     
@@ -88,11 +91,10 @@ def main():
     #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
     
     #init complex network
-    complexNet = pa.complexNeuralNetwork(device, M, gpu)
-    
+    complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     #init sub-neural networks
-    complexNet.init_nets(N, num_features, num_classes, func_f, func_c, weights, bias,
-                         gpu, choice, gamma, multilevel)
+    complexNet.init_nets(N, num_features, num_classes, func_f, func_c, weights, bias
+                         ,choice, gamma, multilevel)
         
     #init SG modules
     complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)    

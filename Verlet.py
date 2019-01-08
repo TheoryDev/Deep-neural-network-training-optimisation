@@ -26,7 +26,7 @@ class Verlet(res.ResNet):
     def forward(self, x, step=0.1, plot=False):
         i = 0
         #get first input form with n_channels
-        if self.conv == True:
+        if self.conv == True and self.first == True:
             x = self.func_f(self.firstMask(x))             
    
         z_minus = torch.zeros(x.shape)
@@ -52,7 +52,7 @@ class Verlet(res.ResNet):
         
         if self.last == True:
             if self.conv:
-                x = x.view(-1, self.num_features*6)
+                x = x.view(-1, self.num_features*self.n_filters)
             x = self.func_c(self.classifier(x), dim = 1)
     
         return x
@@ -60,7 +60,7 @@ class Verlet(res.ResNet):
     def z_sum(self, x, layer, direction = None):
         
         if self.conv == True:
-            #print("l", layer.weight)
+            print("l", layer.weight.shape)
            # layer.weight = layer.weight.transpose(2,3)
             #transConv = nn.Conv2d(6,6,3, padding=1)#.to(self.device)
             #print("shape", transConv.weight.shape)

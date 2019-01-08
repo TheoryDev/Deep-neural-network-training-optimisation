@@ -35,7 +35,7 @@ class complexNeuralNetwork:
     and (M-1) synthetic gradient modules.     
     """
     
-    def __init__(self, device, M=2, gpu=False):
+    def __init__(self, device, M=2, gpu=False, conv=False, in_chns=1, n_filters = 6):
         """
         M - number of neural networks - (M-1) synthetic gradient modules
         """
@@ -45,11 +45,15 @@ class complexNeuralNetwork:
         self.__optimisers = []
         self.__device = device
         self.__error_func = nn.CrossEntropyLoss
-        self.__gpu = gpu       
+        self.__gpu = gpu  
+        self.__conv = conv
+        self.__in_chns = in_chns
+        self.__n_filters = n_filters
         #print("gpu:", self.__gpu)
         
     def create_net(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
-                   func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01, last=False, sg=True):    
+                   func_c =F.softmax, weights = None, bias = None, choice = None, gamma = 0.01,
+                   last=False, first=False):    
             """
             This function creates a single neural network                                    
             """            
@@ -59,7 +63,8 @@ class complexNeuralNetwork:
     
             elif choice == 'v':
                 print("v")
-                model = ver.Verlet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias,  gpu, last, sg)
+                model = ver.Verlet(self.__device, N, num_features, num_classes, func_f, func_c, weights,
+                                   bias, self.__gpu, last, self.__conv, first, self.__in_chns, self.__n_filters)
     
             elif choice == 'l':
                 print("l")
@@ -67,22 +72,29 @@ class complexNeuralNetwork:
     
             else:
                 print("r")
-                model = res.ResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last, sg)
+                model = res.ResNet(self.__device, N, num_features, num_classes, func_f, func_c, weights, bias, 
+                     self.__gpu, last, self.__conv, first, self.__in_chns, self.__n_filters)
     
             return model
     
     def create_sg(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), gpu=False, num_features=2):
         #print("gpu in ", gpu)
-        return syn.synthetic_module(self.__device, function, loss, args, gpu, num_features)
+        return syn.synthetic_module(self.__device, function, loss, args, gpu, num_features, self.__conv, self.__in_chns, self.__n_filters)
     
     def init_nets(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
-                  func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01, mutli = True):
+                  func_c =F.softmax, weights = None, bias = None, choice = None, gamma = 0.01, mutli = True):
              
               
         #store neural network arguments
-        self.__netArgs = (N, num_features, num_classes, func_f, func_c, weights, bias, gpu, choice, gamma)
+        self.__netArgs = (N, num_features, num_classes, func_f, func_c, weights, bias, choice, gamma)
+        
+        self.__nnets = []
+        
+        m = self.create_net(*self.__netArgs, first=True)
+        self.__nnets.append(m)
+        
         #add neural nets to the complex model
-        for i in range(self.__M-1):
+        for i in range(self.__M-2):
             #first M-1 nets do not need a classifier
             m = self.create_net(*self.__netArgs) 
             self.__nnets.append(m)
@@ -163,12 +175,14 @@ class complexNeuralNetwork:
         times = []       
         #update with synthetic gradients from last network to the first
         for i in reversed(range(self.__M-1)):
+            torch.cuda.synchronize()
             sub_net_time = time.perf_counter()
             #calculate synthetic gradient and propagate back through sub network 
             #print("i", i)
             self.__sgmodules[i].backward(y, multi)
             #use optimiser to update the weights of each network
             self.__optimisers[i].step()
+            torch.cuda.synchronize()
             sub_net_time = time.perf_counter() - sub_net_time
             times.append(sub_net_time)
             """
@@ -248,9 +262,10 @@ class complexNeuralNetwork:
                 if self.__gpu == True:
                         inputs, labels = inputs.to(self.__device), labels.to(self.__device)
                 
-                else:
+                if self.__conv == False:
                     inputs = inputs.view(-1, self.__nnets[0].num_features)        
             
+                torch.cuda.synchronize()
                 m_load += time.perf_counter() - batch_load_time
                 t_in_loop = time.perf_counter()
                 #zero_grads
@@ -259,39 +274,48 @@ class complexNeuralNetwork:
                     
                 for s in self.__sgmodules:
                     s.zero_optimiser()
-                    
+                torch.cuda.synchronize()    
                 batch_load_time = time.perf_counter() - batch_load_time
                 #print("batch_load_time", batch_load_time)
-                #propagate   
+                #propagate  
+                torch.cuda.synchronize()
                 tmp = time.perf_counter()
                 out = self.propagate(inputs, f_step)             
                 #print("out", out.shape)                       
                 #--------------------can add regularisation later----------------
                 
                 #calculate loss
+                torch.cuda.synchronize()
                 tmp_loss_t = time.perf_counter()
-                loss = error_func(out, labels)    
+                loss = error_func(out, labels)  
+                torch.cuda.synchronize()
                 t_loss += time.perf_counter() - tmp_loss_t
-                            
+                
+                torch.cuda.synchronize()
                 t_forward += time.perf_counter() - tmp
                 
+                torch.cuda.synchronize()
                 tmp = time.perf_counter()
                 #backward on loss and optimiser.step final net
                 back_t = time.perf_counter()
                 out_net_back_time = time.perf_counter()  
-                     
+                 
+                
                 #update output network weights
                 loss.backward()             
                 self.__optimisers[-1].step()
-                t_out += time.perf_counter() - tmp
                 
+                torch.cuda.synchronize()
+                t_out += time.perf_counter() - tmp                
                 out_net_back_time = time.perf_counter() - out_net_back_time                
               
                 #for each sub-nn backpropagate sg - makes sense as network 
                 #can backprop as soon as it reuturns h^n
                 #update sub-neural net weights using sg
+                torch.cuda.synchronize()
                 tmp = time.perf_counter()
-                sub_back_times = self.backpropgate_SG(labels, multi)    
+                sub_back_times = self.backpropgate_SG(labels, multi) 
+                torch.cuda.synchronize()
                 t_first += time.perf_counter() - tmp                          
                 #the slowest training time of the sub-neural networks is the training time
                 sub_back_times.append(out_net_back_time)
@@ -304,9 +328,11 @@ class complexNeuralNetwork:
                 ones += np.array(sub_back_times).argmax()            
             
                 #optimise sg modules
+                torch.cuda.synchronize()
                 tmp = time.perf_counter()
                 if multi == False:                    
                     syn_error += self.optimise_SG_modules(labels)
+                torch.cuda.synchronize()
                 t_opt += time.perf_counter() - tmp        
                 epoch_loss += loss.item()               
                 
@@ -372,7 +398,7 @@ class complexNeuralNetwork:
 
             if self.__gpu == True:
                 inputs, labels = inputs.to(self.__device), labels.to(self.__device)
-            else:
+            if self.__conv == False:
                 #convert to vector
                 inputs = inputs.view(-1, self.__nnets[0].num_features)
             #propagate through network          

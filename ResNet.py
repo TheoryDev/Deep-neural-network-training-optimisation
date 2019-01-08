@@ -66,7 +66,9 @@ class ResNet(nn.Module):
                 if last == True:                  
                     self.classifier = nn.Linear(num_features,num_classes)            
                
-                       
+            #print("conv", self.conv)
+            #print("gpu", self.gpu)
+            
         def forward(self, x, step=0.1, plot=False):
             #forward propagationelf.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1)
             i = 0    

@@ -47,21 +47,21 @@ def main():
     
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
-    choice = "v" # "v"
+    choice = "r" # "v"
     gpu = True
     conv = True
     
     #hyper parameters
-    N = 4
+    N = 32
     learn_rate = 0.1#0.05
     step = .05
     epochs = 2
     begin = 0
-    end = 10#000
+    end = 10000
     reg_f = False
     reg_c = False
     graph = True
-    batch_size = 64
+    batch_size = 256
     
     alpha_f = 0.01
     alpha_c = 0.01

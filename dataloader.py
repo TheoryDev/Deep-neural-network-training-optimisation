@@ -19,16 +19,26 @@ import swiss as sw
 
 class InMemDataLoader:    
 
-    def __init__(self, dataset = 'MNIST', driver = None, root = './data/'):
+    def __init__(self, dataset = 'MNIST', driver = None, root = './data/', conv_sg=False):
         self.driver = driver
         self.dataset = dataset
         self.root = root
+        self.conv_sg = conv_sg
+        if conv_sg == True:
+            self.root = self.root + "conv"   
+            #self.dataString = root + "sg" + dataset + ".h5"
+        #else:
         self.dataString = root  + dataset + ".h5"     
         
     def loadData(self):
         """
         This loads the dataset and creates the train loader and test loaders
         """
+        batch_size = 100
+        
+        if self.conv_sg == True:
+            batch_size = 1        
+        
         download = True
         root = self.root + self.dataset
         if self.dataset == "MNIST": 
@@ -47,10 +57,10 @@ class InMemDataLoader:
             testset = torchvision.datasets.CIFAR100(root, train=False, download=download, transform=transform)
             
         
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size = 100,
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
                                                       shuffle=False, num_workers=0, pin_memory = False)
         
-        testloader = torch.utils.data.DataLoader(testset, batch_size= 100,
+        testloader = torch.utils.data.DataLoader(testset, batch_size= batch_size,
                                              shuffle=False, num_workers=2, pin_memory = False)
         
         return trainloader, testloader
@@ -59,10 +69,20 @@ class InMemDataLoader:
         
         myFile = h5py.File(self.dataString, 'w', driver= self.driver)
         
+        num_classes = 10
+        
+        if self.dataset == "CIFAR100":
+            num_classes = 100           
+        
         trainloader, testloader = self.loadData()       
         print("downloading done")
         for i, data in enumerate(trainloader, 0):
             inputs, labels = data
+            
+            if self.conv_sg == True:
+                tmp = torch.zeros(inputs.shape).float()
+                labels = tmp + labels[0].float()/num_classes
+            
             #print(i)
             if i == 0:               
                 store_inputs = inputs
@@ -77,7 +97,12 @@ class InMemDataLoader:
         
         for i, data in enumerate(testloader, 0):
             inputs, labels = data
-            #print(i)
+            
+            if self.conv_sg == True:
+                tmp = torch.zeros(inputs.shape).float()
+                labels = tmp + labels[0].float()/num_classes
+            
+           # print(i)
             if i == 0:                
                 store_inputs = inputs
                 store_labels = labels
@@ -140,7 +165,9 @@ class InMemDataLoader:
         
         #conver to correct datatypes
         features = features.float()
-        labels = labels.long()
+        
+        if self.conv_sg == False:
+            labels = labels.long()
         
         
         #move to device

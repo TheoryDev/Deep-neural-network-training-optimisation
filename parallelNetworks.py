@@ -17,6 +17,8 @@ from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error as mse
 import itertools
 import time
+import torch.multiprocessing
+
 
 #dnn codebase
 import ResNet as res
@@ -263,8 +265,8 @@ class complexNeuralNetwork:
                         inputs, labels = inputs.to(self.__device), labels.to(self.__device)
                 
                 if self.__conv == False:
-                    inputs = inputs.view(-1, self.__nnets[0].num_features)        
-            
+                    inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns) 
+                                           
                 torch.cuda.synchronize()
                 m_load += time.perf_counter() - batch_load_time
                 t_in_loop = time.perf_counter()
@@ -287,7 +289,12 @@ class complexNeuralNetwork:
                 #calculate loss
                 torch.cuda.synchronize()
                 tmp_loss_t = time.perf_counter()
-                loss = error_func(out, labels)  
+                if self.__conv == True:
+                    labels_y = labels[:,0,:0]*self.__nnets[0].num_classes
+                    #print("labels", labels_y.round().long(), labels_y.shape)
+                    loss = error_func(out, labels_y.round().long())
+                else:
+                    loss = error_func(out, labels)  
                 torch.cuda.synchronize()
                 t_loss += time.perf_counter() - tmp_loss_t
                 
@@ -314,6 +321,9 @@ class complexNeuralNetwork:
                 #update sub-neural net weights using sg
                 torch.cuda.synchronize()
                 tmp = time.perf_counter()
+                #if self.__conv == True:
+                  #  sub_back_times = self.backpropgate_SG(labels, multi)
+                #else:                    
                 sub_back_times = self.backpropgate_SG(labels, multi) 
                 torch.cuda.synchronize()
                 t_first += time.perf_counter() - tmp                          
@@ -400,7 +410,9 @@ class complexNeuralNetwork:
                 inputs, labels = inputs.to(self.__device), labels.to(self.__device)
             if self.__conv == False:
                 #convert to vector
-                inputs = inputs.view(-1, self.__nnets[0].num_features)
+                inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)
+            else:
+                labels =  (labels[:,0,:0]*self.__nnets[0].num_classes).round().long()
             #propagate through network          
             #print("in", inputs)           
             outputs = self.propagate(inputs, step = f_step, train=False)
@@ -450,6 +462,10 @@ class complexNeuralNetwork:
             if self.__gpu == True:
                 net.to(self.__device)       
   
+    
+    def DistTrain(self):
+        
+        
 """
 To do - add saving networks      
       - add regularisation

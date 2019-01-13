@@ -61,10 +61,10 @@ class ResNet(nn.Module):
             #init layers for FCN
             else:
                 for i in range(0, N):
-                    self.layers.append(nn.Linear(num_features, num_features))
+                    self.layers.append(nn.Linear(num_features*in_chns, num_features*in_chns))
                 #classifier  
                 if last == True:                  
-                    self.classifier = nn.Linear(num_features,num_classes)            
+                    self.classifier = nn.Linear(num_features*in_chns,num_classes)            
                
             #print("conv", self.conv)
             #print("gpu", self.gpu)
@@ -163,7 +163,7 @@ class ResNet(nn.Module):
                     if self.gpu == True:
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
                         torch.cuda.synchronize()
-                    
+                    #print("labels", labels)
                     if self.conv == False:                   
                         tmp_v = time.perf_counter()
                         inputs = inputs.view(-1, self.num_features)
@@ -443,7 +443,10 @@ class ResNet(nn.Module):
 
             for i in np.arange(0, end, 2):
             #    print("adding")
-                layers.insert(i, nn.Linear(self.num_features, self.num_features))
+                if self.conv ==  True:
+                    layers.insert(i, nn.Conv2d(self.n_filters,self.n_filters,3, padding=1))
+                else:            
+                    layers.insert(i, nn.Linear(self.num_features, self.num_features))
             #re-encapsulate layers
             self.layers = nn.ModuleList(layers)
             end -= 1

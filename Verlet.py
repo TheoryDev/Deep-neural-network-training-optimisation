@@ -60,7 +60,7 @@ class Verlet(res.ResNet):
     def z_sum(self, x, layer, direction = None):
         
         if self.conv == True:
-            print("l", layer.weight.shape)
+            #print("l", layer.weight.shape)
            # layer.weight = layer.weight.transpose(2,3)
             #transConv = nn.Conv2d(6,6,3, padding=1)#.to(self.device)
             #print("shape", transConv.weight.shape)

@@ -40,9 +40,13 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")     
     torch.manual_seed(11)    
     np.random.seed(11)
-    gpu = True  
-    conv = True  
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    gpu = True
+    conv = False
     dataset_name = "MNIST"
+    choice = 'r'
     
     multilevel = True
     
@@ -54,20 +58,20 @@ def main():
     graph = True
     
     #-----------hyper parameters
-    batch_size = 64
+    batch_size = 256
     #-note coarse model will be 2* this, fine model with be 4* this    
-    N = 1
-    learn_rate_c = .5
-    f_step_c = .2
-    learn_rate_f = .2
-    f_step_f = .1
-    epochs = 10
+    N = 4
+    learn_rate_c = .1
+    f_step_c = .5
+    learn_rate_f = .05
+    f_step_f = .25
+    epochs = 50
       
     # 0.00005
     alpha_f = 0.001
     alpha_c = 0.00025    
     gamma = 0.05
-    choice = 'v'
+   
     begin = 0
     end = 10000  
            
@@ -100,9 +104,11 @@ def main():
     complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)    
         
     #train coarse model
+    torch.cuda.synchronize()
     coarse_time = time.time()
     complexNet.train_multi_level(loader, error_func, learn_rate_c, epochs, begin, end
                      ,f_step_c, reg_f, alpha_f, reg_c, alpha_c, graph = False)
+    torch.cuda.synchronize()
     coarse_time = time.time() - coarse_time
     
     #print("after coarse train")
@@ -114,9 +120,11 @@ def main():
     #train fine model            
     
     #train_network
+    torch.cuda.synchronize()
     start_time = time.perf_counter()
     train_time = complexNet.train(loader, error_func, learn_rate_f, epochs, begin, end
                      ,f_step_f, reg_f, alpha_f, reg_c, alpha_c, graph)
+    torch.cuda.synchronize()
     end_time = time.perf_counter() - start_time       
       
     print ("coarse train results", coarse_result, "\n")

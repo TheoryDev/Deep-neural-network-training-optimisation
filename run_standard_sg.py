@@ -35,6 +35,8 @@ import dataloader as dl
 
 def main():
 
+    
+    
     #complex net parameters
     M = 2
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -43,7 +45,8 @@ def main():
       
     np.random.seed(11)
     torch.manual_seed(11)
-   
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
     
               
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
@@ -62,11 +65,11 @@ def main():
     graph = True    
     
     #-----------hyper parameters
-    batch_size = 64
-    N = 4#-note  model will be 2* this 
-    learn_rate = 0.1
-    f_step = 1
-    epochs = 2   
+    batch_size = 256
+    N = 16#-note  model will be 2* this 
+    learn_rate = 0.05
+    f_step = 0.1
+    epochs = 100   
       
     gamma = 0.02    
     begin = 0
@@ -77,7 +80,7 @@ def main():
     func_c = F.softmax    
     error_func = nn.CrossEntropyLoss()       
     
-    dataloader = dl.InMemDataLoader(dataset_name)
+    dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
         
     num_features, num_classes, in_channels = dl.getDims(dataset_name)
                                   
@@ -102,9 +105,11 @@ def main():
     complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)  
   
     #train_network
+    torch.cuda.synchronize()
     start_time = time.perf_counter()
     train_time = complexNet.train(loader, error_func, learn_rate, epochs, begin, end
                      ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph)
+    torch.cuda.synchronize()
     end_time = time.perf_counter() - start_time    
      
     print("total time in series:" , end_time)

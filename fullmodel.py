@@ -42,6 +42,8 @@ def main():
     #preliminaires
     np.random.seed(11)
     torch.manual_seed(11)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     
@@ -49,13 +51,13 @@ def main():
     #choose model
     choice = "r" # "v"
     gpu = True
-    conv = True
+    conv = False
     
     #hyper parameters
     N = 32
     learn_rate = 0.1#0.05
-    step = .05
-    epochs = 2
+    step = .3
+    epochs = 100
     begin = 0
     end = 10000
     reg_f = False

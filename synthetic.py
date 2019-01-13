@@ -43,14 +43,14 @@ class LinearRegressionSG(nn.Module):
     prediction. It uses the tanh activation function.
     """
     
-    def __init__(self, num_features, conv=False, in_channels=16, n_filters=6):
+    def __init__(self, num_features, conv=False, in_channels=7, n_filters=6):
         super(LinearRegressionSG, self).__init__()
         
         self.conv = conv
         if self.conv == True:
-            self.linear = nn.Conv2d(in_channels, n_filters, 3, padding=1, groups=2)    
+            self.linear = nn.Conv2d(n_filters+1, n_filters, 3, padding=1, groups=1)    
         else:
-            self.linear = nn.Linear(num_features+1, num_features)
+            self.linear = nn.Linear(num_features*in_channels+1, num_features*in_channels)
                 
         
     def forward(self, x):
@@ -76,7 +76,7 @@ class synthetic_module:
         self.__lin = linear_model.LinearRegression(normalize=False)
         self.__device = device
         self.__gpu = gpu
-        self.__linSG = LinearRegressionSG(num_features, conv)
+        self.__linSG = LinearRegressionSG(num_features, conv, in_channels, n_filters)
         self.__conv = conv
         if self.__gpu == True:
             self.__linSG.to(device)
@@ -117,15 +117,19 @@ class synthetic_module:
     def calculate_sg(self, h, y,func=sg):
         
        if self.__conv == True:
-           tmp_y = self.convLabels(y, h[0][0].shape, 10)#.to(self.__device)
-           if self.__gpu == True:
-               tmp_y = tmp_y.to(self.__device)
+           tmp_y = y.reshape(y.shape[0],1,28,28)
+           #print("y",tmp_y[0])
+           #print("h", h[0])
+           #tmp_y = y self.convLabels(y, h[0][0].shape, 10)#.to(self.__device)
+           #if self.__gpu == True:
+               #tmp_y = tmp_y.to(self.__device)
        else:
            tmp_y = y.reshape((len(y),1)).float()  
        #reshape labels y
        tmp_h = h.detach()
        #print(tmp_h, tmp_y)
-       x =  torch.cat((tmp_h, tmp_y), dim=1)        
+       x =  torch.cat((tmp_h, tmp_y), dim=1)   
+       #print("x",x[0][0], x[0][6])
        #get prediction
        pred = self.__linSG(x)        
        #if self.__gpu == True:
@@ -151,14 +155,14 @@ class synthetic_module:
         if multi == True:           
             self.__h_before.backward(self.__h_after.grad)
             return
-        self.zero_optimiser() 
+        
         #ecalculate synthetic gradient        
         self.syn_grad = self.calculate_sg(self.__h_before, y)
         #print(syn_grad)
         #backpropagate synthetic gradient into sub-nn
         #print("hs", self.__h_before.shape)
         #print("sg", syn_grad)        
-        self.__h_before.backward(self.syn_grad.detach())
+        self.__h_before.backward(self.syn_grad)
         
     def optimise(self, y, multi=False):
         """
@@ -168,7 +172,7 @@ class synthetic_module:
         """       
         #self.zero_optimiser() 
         #pred = self.calculate_sg(self.__h_before.detach(), y)          
-                      
+        self.zero_optimiser()               
         #get real gradient       
         grad = self.__h_after.grad.data
         #optimise gradient

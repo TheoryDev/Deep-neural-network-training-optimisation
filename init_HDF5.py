@@ -13,8 +13,8 @@ def main():
     #store MNIST in HDF5
     myMemLoader = dl.InMemDataLoader(dataset= "MNIST")
     myMemLoader.storeAsHDF5()
-    print("MNIST stored in HDF5")
-    
+    print("MNIST stored in HDF5") 
+  
     #store CIFAR 10
     myMemLoader = dl.InMemDataLoader(dataset= "CIFAR10")
     myMemLoader.storeAsHDF5()
@@ -25,6 +25,27 @@ def main():
     myMemLoader.storeAsHDF5()
     print("CIFAR100 stored in HDF5")
     
+    """
+    
+    
+      #store MNIST in HDF5
+   # myMemLoader = dl.InMemDataLoader(dataset= "MNIST", conv_sg=True)
+    #myMemLoader.storeAsHDF5()
+    #print("MNIST stored in HDF5")
+    
+    
+    
+    #store CIFAR 10
+    myMemLoader = dl.InMemDataLoader(dataset= "CIFAR10", conv_sg=True)
+    myMemLoader.storeAsHDF5()
+    print("CIFAR10 stored in HDF5")
+    
+    #STORE CIFAR 100
+    myMemLoader = dl.InMemDataLoader(dataset= "CIFAR100", conv_sg=True)
+    myMemLoader.storeAsHDF5()
+    print("CIFAR100 stored in HDF5")
+    
+    """
     
 if __name__ == '__main__':
     main()

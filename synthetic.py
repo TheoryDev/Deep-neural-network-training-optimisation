@@ -158,13 +158,13 @@ class synthetic_module:
         
         #ecalculate synthetic gradient        
         self.syn_grad = self.calculate_sg(self.__h_before, y)
-        #print(syn_grad)
+        #print("sg", self.syn_grad)
         #backpropagate synthetic gradient into sub-nn
         #print("hs", self.__h_before.shape)
         #print("sg", syn_grad)        
         self.__h_before.backward(self.syn_grad)
         
-    def optimise(self, y, multi=False):
+    def optimise(self, y, multi=False, para=False, gradient=None):
         """
         The function optimises the synthetic gradient. 
         It obtains the gradient dL/dh^n from the h_after instance attribute. 
@@ -173,10 +173,15 @@ class synthetic_module:
         #self.zero_optimiser() 
         #pred = self.calculate_sg(self.__h_before.detach(), y)          
         self.zero_optimiser()               
-        #get real gradient       
-        grad = self.__h_after.grad.data
+        #get real gradient
+        if para == False:
+            grad = self.__h_after.grad.data
+        else:
+            grad = gradient
         #optimise gradient
        
+        #print("syn_grad", self.syn_grad, "real grad", grad)
+        
         error_func = nn.MSELoss()#(pred ,grad)
         loss = error_func(self.syn_grad, grad)
         

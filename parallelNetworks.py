@@ -17,7 +17,7 @@ from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error as mse
 import itertools
 import time
-import torch.multiprocessing
+import multiprocessing as mp
 
 
 #dnn codebase
@@ -463,7 +463,81 @@ class complexNeuralNetwork:
                 net.to(self.__device)       
   
     
-    def DistTrain(self):
+    def distTrain(self, trainloader, error_func, learn_rate, epochs, begin, end
+                                ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, multi=False, num_procs=2):
+
+
+        
+
+        #print network parameters
+        #for net in self.__nnets:
+           # print(net)
+           # for p in net.parameters():
+            #    print(p)
+
+        #mp.set_start_method('spawn')    
+        #init pipes
+        processes = []
+        pipes = []
+        
+        #create optimisers
+        self.init_optimisers(learn_rate)        
+        
+        for i in range(num_procs+1):
+            pipes.append(mp.Pipe())
+        #first process
+        p = mp.Process(target=proc_run, args=(0, pipes[0][1], pipes[1][0], 
+                                              self.__nnets[0], self.__optimisers[0], f_step, self.__sgmodules[0]))
+        p.start()
+        processes.append(p)
+        
+        #N-2 middle processes
+        for i in range(1, num_procs-1):
+            p = mp.Process(target=proc_run, args=(i, pipes[i][1], pipes[i+1][0], 
+                                                  self.__nnets[i], self.__optimisers[i], f_step, self.__sgmodules[i]))
+            p.start()
+            processes.append(p)
+        #last process
+        p = mp.Process(target=proc_run, args=(-1, pipes[-2][1], pipes[-1][0], self.__nnets[-1], 
+                                              self.__optimisers[-1], f_step, None, error_func))
+        p.start()
+        processes.append(p)
+        
+        for epoch in range(epochs):
+        
+            
+            epoch_loss = 0    
+            i = 0
+            #iterate over batches and epochs and send to processors
+            for inputs, labels in itertools.islice(trainloader, begin, end):
+                #send batch through pipes
+                
+                
+                pipes[0][0].send([inputs, labels])
+                    
+                loss = pipes[-1][1].recv()
+                
+                epoch_loss += loss
+             
+               # print("pred", pred)
+                i += 1
+                #break
+       
+            print("epoch", epoch+1, "loss", epoch_loss/i)
+            
+        pipes[0][0].send(None)
+
+
+        for p in processes:
+            p.join()
+            
+        print("ended")
+         
+        #print network parameters
+        #for net in self.__nnets:
+            #print(net)
+            #for p in net.parameters():
+                #print(p)
         
         
 """
@@ -471,7 +545,66 @@ To do - add saving networks
       - add regularisation
 """
 
-         
+def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=None):
+    #receive data
+    #data = 1
+    #print("name")
+    data = pipeA.recv()    
+    
+    while data != None:        
+        
+        inputs, labels = data
+        
+        if name != 0:
+            inputs.requires_grad = True
+        
+        #print("name", name, "\n", inputs, labels)
+        #zero optimiser
+        opt.zero_grad()
+        
+        #propagate through sub neural network
+        output = model(inputs)
+        #propagate through sg module and pass output to next net
+        if name == -1:
+            loss = error_func(output, labels)
+            pipeB.send(loss)
+        else:
+            output = sg_module.propagate(output)        
+            pipeB.send([output, labels])
+        
+        #use backward pass
+        if name == -1:            
+            loss.backward()            
+            
+        #calculate synthetic gradient    
+        else:
+            sg_module.backward(labels, False)
+        
+        #update weights
+        opt.step()            
+                
+        #send synthetic gradient back first if not first neural net
+        if name != 0:       
+            #print("name_grad", name, "grad", inputs.grad)
+            pipeA.send(inputs.grad)
+            
+        #if last subnet wait for next batch 
+        if name != -1:          
+            
+            grad = pipeB.recv()
+            
+            sg_module.optimise(labels, multi=False, para=True, gradient=grad)
+    
+        #get next batch
+        data = pipeA.recv()
+    
+    #send terminating none signal to next sub net
+    pipeB.send(None)
+    
+    #time.sleep(10)
+    #for p in model.parameters():
+        #print("name", name, p)
+    
             
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

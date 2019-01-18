@@ -153,18 +153,19 @@ class complexNeuralNetwork:
         #calculate loss                  
         for i in range(self.__M-1):
             #propagate through sub-neural network
+            #print("xa", x)
             x = self.__nnets[i](x, step)
-            #print("x", x)
+           # print("xb", x)
             #save input into synthetic gradient module
             #and get h_after for next round
             #if train == True:
             x = self.__sgmodules[i].propagate(x)
-            
+           # print("xc", x)
                         
         #progate through final network
         x = self.__nnets[-1](x, step)
         
-        #print("x", x)
+        #print("xl", x)
         return x
     
     def backpropgate_SG(self, y, multi=False):
@@ -257,6 +258,9 @@ class complexNeuralNetwork:
             
             ones = 0.
             
+            #for p in self.__nnets[0].parameters():
+               # print("p", p)
+            
             #iterate over each batch in dataset
             batch_load_time = time.perf_counter()
             for inputs, labels in itertools.islice(trainloader, begin, end):
@@ -266,7 +270,7 @@ class complexNeuralNetwork:
                 
                 if self.__conv == False:
                     inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns) 
-                                           
+               # print("inputs", inputs)                         
                 torch.cuda.synchronize()
                 m_load += time.perf_counter() - batch_load_time
                 t_in_loop = time.perf_counter()
@@ -283,7 +287,7 @@ class complexNeuralNetwork:
                 torch.cuda.synchronize()
                 tmp = time.perf_counter()
                 out = self.propagate(inputs, f_step)             
-                #print("out", out.shape)                       
+                #print("out", out)                       
                 #--------------------can add regularisation later----------------
                 
                 #calculate loss
@@ -307,6 +311,7 @@ class complexNeuralNetwork:
                 back_t = time.perf_counter()
                 out_net_back_time = time.perf_counter()  
                  
+                #print("loss", loss)
                 
                 #update output network weights
                 loss.backward()             
@@ -466,9 +471,7 @@ class complexNeuralNetwork:
     def distTrain(self, trainloader, error_func, learn_rate, epochs, begin, end
                                 ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, multi=False, num_procs=2):
 
-
-        
-
+        #print("learn rate main", learn_rate)
         #print network parameters
         #for net in self.__nnets:
            # print(net)
@@ -479,7 +482,8 @@ class complexNeuralNetwork:
         #init pipes
         processes = []
         pipes = []
-        
+        losses = []
+        rounds = []
         #create optimisers
         self.init_optimisers(learn_rate)        
         
@@ -510,21 +514,36 @@ class complexNeuralNetwork:
             i = 0
             #iterate over batches and epochs and send to processors
             for inputs, labels in itertools.islice(trainloader, begin, end):
+                
+                #print("inputs", inputs)
+                
                 #send batch through pipes
-                
-                
                 pipes[0][0].send([inputs, labels])
-                    
+                #receive loss
+                
+                
                 loss = pipes[-1][1].recv()
                 
                 epoch_loss += loss
              
+               # for net in self.__nnets:
+                    #print(net)
+                    #for p in net.parameters():
+                     #   print(p)
+                
                # print("pred", pred)
                 i += 1
                 #break
        
             print("epoch", epoch+1, "loss", epoch_loss/i)
             
+            if graph == True:
+                #make more sophisticated
+                losses.append(epoch_loss/i)
+                rounds.append(epoch)   
+            
+            
+        #send kill signal
         pipes[0][0].send(None)
 
 
@@ -532,7 +551,17 @@ class complexNeuralNetwork:
             p.join()
             
         print("ended")
+        
          
+          
+        if graph == True:
+            plt.plot(rounds, losses, '-')
+            plt.grid()
+            plt.xlabel("epochs")
+            plt.ylabel("loss")
+            plt.show() 
+        
+        
         #print network parameters
         #for net in self.__nnets:
             #print(net)
@@ -549,29 +578,43 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
     #receive data
     #data = 1
     #print("name")
-    data = pipeA.recv()    
+    data = pipeA.recv()        
+    
+   
+    #print("name", name, "opt", opt.param_groups)
     
     while data != None:        
         
-        inputs, labels = data
+     #   if name == 0:
+           # for p in model.parameters():
+            #    print("name", name, p)
         
+        inputs, labels = data
+        #print("b",inputs.requires_grad)
         if name != 0:
             inputs.requires_grad = True
-        
+        #else:
+           # print("start",inputs)
+        #print("a",inputs.requires_grad)
         #print("name", name, "\n", inputs, labels)
         #zero optimiser
         opt.zero_grad()
+        if name != -1:
+            sg_module.zero_optimiser()
         
         #propagate through sub neural network
-        output = model(inputs)
+        output = model(inputs, step)
+        #print("name", name, "outB", output)
         #propagate through sg module and pass output to next net
         if name == -1:
             loss = error_func(output, labels)
             pipeB.send(loss)
         else:
-            output = sg_module.propagate(output)        
+            output = sg_module.propagate(output, para=True)        
             pipeB.send([output, labels])
-        
+            
+        #print("name", name, "outA", output)
+        #print("aname", name, "inputs", inputs, "grad", inputs.grad)
         #use backward pass
         if name == -1:            
             loss.backward()            
@@ -579,21 +622,23 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
         #calculate synthetic gradient    
         else:
             sg_module.backward(labels, False)
-        
+        opt.step()
+        #print("bname", name, "inputs", inputs, "grad", inputs.grad)
         #update weights
-        opt.step()            
-                
+                    
+        #print("cname", name, "inputs", inputs, "grad", inputs.grad)       
         #send synthetic gradient back first if not first neural net
         if name != 0:       
-            #print("name_grad", name, "grad", inputs.grad)
+            #print("send name_grad", name, "grad", inputs.grad)
             pipeA.send(inputs.grad)
             
         #if last subnet wait for next batch 
-        if name != -1:          
-            
+        if name != -1:         
+            #get gradient and update sg module
             grad = pipeB.recv()
-            
-            sg_module.optimise(labels, multi=False, para=True, gradient=grad)
+            #print("recv name_grad", name, "grad", grad)
+            sg_error = sg_module.optimise(labels, multi=False, para=True, gradient=grad)
+            #print("sg erro", sg_error)
     
         #get next batch
         data = pipeA.recv()

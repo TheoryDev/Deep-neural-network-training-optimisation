@@ -22,7 +22,9 @@ import time
 
 #own codebase
 import ResNet as res
-    
+   
+
+ 
 
 def sgLoss(args, h, y, grad, loss=mse):
     #sg = h*args[0] + y*args[1] + args[2]
@@ -137,8 +139,10 @@ class synthetic_module:
        return pred    
       
            
-    def propagate(self, h):
+    def propagate(self, h, para=False):
         self.__h_before = h
+        if para:
+            return h
         self.__h_after = h.clone().detach()
         self.__h_after.requires_grad = True        
         return self.__h_after
@@ -162,7 +166,7 @@ class synthetic_module:
         #backpropagate synthetic gradient into sub-nn
         #print("hs", self.__h_before.shape)
         #print("sg", syn_grad)        
-        self.__h_before.backward(self.syn_grad)
+        self.__h_before.backward(self.syn_grad.detach())
         
     def optimise(self, y, multi=False, para=False, gradient=None):
         """

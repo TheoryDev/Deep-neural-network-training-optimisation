@@ -47,23 +47,23 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     
-    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    dataset_name = "ELLIPSE" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
     choice = "r" # "v"
-    gpu = True
+    gpu = False
     conv = False
     
     #hyper parameters
-    N = 32
-    learn_rate = 0.1#0.05
-    step = .3
+    N = 4
+    learn_rate = 0.5#0.05
+    step = .75
     epochs = 100
     begin = 0
     end = 10000
     reg_f = False
     reg_c = False
     graph = True
-    batch_size = 256
+    batch_size = 64
     
     alpha_f = 0.01
     alpha_c = 0.01

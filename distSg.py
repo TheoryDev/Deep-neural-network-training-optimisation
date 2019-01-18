@@ -113,7 +113,7 @@ def main():
         
     num_features, num_classes, in_channels = dl.getDims(dataset_name)
                                   
-    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = True, train = True)     
+    loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
     
     multilevel = False       
     #------------------------------------------------------------------------------
@@ -142,10 +142,9 @@ def main():
                     ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, False, M)
     
     
-    accAfter = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
-    
-    print("accBefore", accBefore)
-    print("accAfter", accAfter)
+    #accAfter = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
+      
+   
     #torch.cuda.synchronize()
     #end_time = time.perf_counter() - start_time    
      

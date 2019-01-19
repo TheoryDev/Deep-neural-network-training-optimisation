@@ -66,9 +66,9 @@ def main():
     
     #-----------hyper parameters
     batch_size = 64
-    N = 2#-note  model will be 2* this 
-    learn_rate = 0.5
-    f_step = 0.75
+    N = 256#-note  model will be 2* this 
+    learn_rate = 0.8
+    f_step = 0.03
     epochs = 100#00   
       
     gamma = 0.02    

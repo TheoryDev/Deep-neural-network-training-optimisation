@@ -69,9 +69,9 @@ graph = False
 
 #-----------hyper parameters
 batch_size = 64
-N = 2#-note  model will be 2* this 
-learn_rate = 0.5
-f_step = 0.75
+N = 256#-note  model will be 2* this 
+learn_rate = 0.8
+f_step = 0.03
 epochs = 100#000  
   
 gamma = 0.02    
@@ -163,7 +163,7 @@ def main():
     #theoretical time is the training time using the lowest on each batch of training
     #print("Total time:", train_time[0], "\ntheoretical time:", train_time[1])#, "\nspeed up:", train_time[2])  
     #print("Batch time adjusted speed up", train_time[3])         
-            
+    print("train time", train_time)        
    
 
 

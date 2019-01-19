@@ -43,9 +43,9 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
-    gpu = True
+    gpu = False
     conv = False
-    dataset_name = "MNIST"
+    dataset_name = "ELLIPSE"
     choice = 'r'
     
     multilevel = True
@@ -58,9 +58,9 @@ def main():
     graph = True
     
     #-----------hyper parameters
-    batch_size = 256
+    batch_size = 64
     #-note coarse model will be 2* this, fine model with be 4* this    
-    N = 4
+    N = 1
     learn_rate_c = .1
     f_step_c = .5
     learn_rate_f = .05

@@ -506,6 +506,8 @@ class complexNeuralNetwork:
                                               self.__optimisers[-1], f_step, None, error_func))
         p.start()
         processes.append(p)
+        print("start")
+        t = time.perf_counter()
         
         for epoch in range(epochs):
         
@@ -541,8 +543,8 @@ class complexNeuralNetwork:
                 #make more sophisticated
                 losses.append(epoch_loss/i)
                 rounds.append(epoch)   
-            
-            
+        print("end")    
+        t = time.perf_counter() - t    
         #send kill signal
         pipes[0][0].send(None)
 
@@ -568,7 +570,7 @@ class complexNeuralNetwork:
             #for p in net.parameters():
                 #print(p)
         
-        
+        return t
 """
 To do - add saving networks      
       - add regularisation
@@ -644,12 +646,8 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
         data = pipeA.recv()
     
     #send terminating none signal to next sub net
-    pipeB.send(None)
-    
-    #time.sleep(10)
-    #for p in model.parameters():
-        #print("name", name, p)
-    
+    pipeB.send(None)   
+       
             
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

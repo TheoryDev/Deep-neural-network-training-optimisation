@@ -60,7 +60,7 @@ def main(argv):
     N = 4
     learn_rate = 0.2#0.05
     step = .4
-    epochs = 1#50
+    epochs = 20#50
     begin = 0
     end = 10000
     reg_f = False
@@ -81,10 +81,10 @@ def main(argv):
         N = int(argv[0])
         epochs = int(argv[1])
         learn_rate = float(argv[2])
-        step = float(argv[3])
-        
+        step = float(argv[3])        
         choice = argv[4]
-        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice)  
+        graph = argv[5]
+        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice, "graph", graph)  
     
     ##return
     

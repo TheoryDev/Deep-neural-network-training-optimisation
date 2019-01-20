@@ -104,7 +104,8 @@ def main(argv):
         learn_rate = float(argv[2])
         step = float(argv[3])        
         choice = argv[4]
-        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice)
+        graph = argv[5]
+        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice, "graph", graph)
          
     np.random.seed(11)
     torch.manual_seed(11)

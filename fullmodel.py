@@ -36,8 +36,10 @@ import dataloader as dl
 import ResNet as res
 import Verlet as ver
 import dataloader
+import sys, getopt
 
-def main():
+
+def main(argv):
     #torch.set_num_threads(2)
     #preliminaires
     np.random.seed(11)
@@ -47,23 +49,24 @@ def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     
-    dataset_name = "ELLIPSE" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
     choice = "r" # "v"
     gpu = False
     conv = False
     
+    batch_size = 256
     #hyper parameters
     N = 4
-    learn_rate = 0.5#0.05
-    step = .75
-    epochs = 100
+    learn_rate = 0.2#0.05
+    step = .4
+    epochs = 1#50
     begin = 0
     end = 10000
     reg_f = False
     reg_c = False
     graph = True
-    batch_size = 64
+    
     
     alpha_f = 0.01
     alpha_c = 0.01
@@ -73,6 +76,17 @@ def main():
     func_c = F.softmax
     #load trainset
     
+    if len(argv) > 0:
+        #print(argv)
+        N = int(argv[0])
+        epochs = int(argv[1])
+        learn_rate = float(argv[2])
+        step = float(argv[3])
+        
+        choice = argv[4]
+        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice)  
+    
+    ##return
     
     model = chooseModel(dataset_name, device, N, func_f, func_c, gpu, choice, conv=conv, first=True)    
     
@@ -123,6 +137,6 @@ def chooseModel(dataset, device, N, func_f, func_c, gpu, choice, last=True,
     
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
 
 

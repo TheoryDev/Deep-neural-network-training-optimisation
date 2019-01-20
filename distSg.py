@@ -40,19 +40,15 @@ import dataloader as dl
 import ResNet as res
 import Verlet as ver
 import dataloader as dl
-
-
+import sys, getopt
 
 #complex net parameters
 M = 2
 
 
 #---------------training data--------------------
-  
-
-
           
-dataset_name = "ELLIPSE" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
 choice = 'r'
 conv= False
 gpu = False
@@ -65,14 +61,14 @@ reg_f = False
 reg_c = False   
 alpha_f = 0.001
 alpha_c = 0.00025
-graph = False
+graph = True
 
 #-----------hyper parameters
-batch_size = 64
-N = 256#-note  model will be 2* this 
-learn_rate = 0.8
-f_step = 0.03
-epochs = 100#000  
+batch_size = 256
+N = 2#-note  model will be 2* this 
+learn_rate = 0.05
+f_step = .5
+epochs = 20#10#000  
   
 gamma = 0.02    
 begin = 0
@@ -99,8 +95,17 @@ sg_loss = nn.MSELoss
 
 
 
-def main():
-  
+def main(argv):
+    
+    if len(argv) > 0:
+        #print(argv)
+        N = int(argv[0])
+        epochs = int(argv[1])
+        learn_rate = float(argv[2])
+        step = float(argv[3])        
+        choice = argv[4]
+        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice)
+         
     np.random.seed(11)
     torch.manual_seed(11)
     torch.backends.cudnn.deterministic = True
@@ -172,7 +177,7 @@ if __name__ == '__main__':
    
     #mp.set_start_method('spawn')
     #num_procs = 2
-    main()
+    main(sys.argv[1:])
     
     
     #create model

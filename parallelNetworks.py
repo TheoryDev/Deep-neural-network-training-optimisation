@@ -507,6 +507,7 @@ class complexNeuralNetwork:
         p.start()
         processes.append(p)
         print("start")
+        torch.cuda.synchronize()
         t = time.perf_counter()
         
         for epoch in range(epochs):
@@ -516,6 +517,9 @@ class complexNeuralNetwork:
             i = 0
             #iterate over batches and epochs and send to processors
             for inputs, labels in itertools.islice(trainloader, begin, end):
+                
+                if self.__conv == False:
+                    inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)
                 
                 #print("inputs", inputs)
                 
@@ -543,7 +547,8 @@ class complexNeuralNetwork:
                 #make more sophisticated
                 losses.append(epoch_loss/i)
                 rounds.append(epoch)   
-        print("end")    
+        print("end")  
+        torch.cuda.synchronize()
         t = time.perf_counter() - t    
         #send kill signal
         pipes[0][0].send(None)

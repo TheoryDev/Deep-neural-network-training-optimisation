@@ -196,7 +196,7 @@ class synthetic_module:
             #t = time.perf_counter()
             #loss += torch.sum(torch.pow(param,2))
             #print(time.perf_counter()-t)
-        
+        #print("sg loss", loss)
         #calculate loss
         loss.backward()        
         #update weights

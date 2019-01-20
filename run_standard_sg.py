@@ -49,7 +49,7 @@ def main():
     torch.backends.cudnn.benchmark = False
     
               
-    dataset_name = "ELLIPSE" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
     conv= False
     gpu = False
@@ -65,11 +65,11 @@ def main():
     graph = True    
     
     #-----------hyper parameters
-    batch_size = 64
-    N = 256#-note  model will be 2* this 
-    learn_rate = 0.8
-    f_step = 0.03
-    epochs = 100#00   
+    batch_size = 256
+    N = 2#-note  model will be 2* this 
+    learn_rate = 0.05
+    f_step = 0.5
+    epochs = 20#10#00   
       
     gamma = 0.02    
     begin = 0

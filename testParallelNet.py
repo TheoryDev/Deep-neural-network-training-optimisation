@@ -45,7 +45,7 @@ def main():
     
     gpu = False
     conv = False
-    dataset_name = "ELLIPSE"
+    dataset_name = "MNIST"
     choice = 'r'
     
     multilevel = True
@@ -58,14 +58,14 @@ def main():
     graph = True
     
     #-----------hyper parameters
-    batch_size = 64
+    batch_size = 256
     #-note coarse model will be 2* this, fine model with be 4* this    
     N = 1
-    learn_rate_c = .1
-    f_step_c = .5
-    learn_rate_f = .05
-    f_step_f = .25
-    epochs = 50
+    learn_rate_c = .5
+    f_step_c = .4
+    learn_rate_f = .25
+    f_step_f = .15
+    epochs = 2#10#0
       
     # 0.00005
     alpha_f = 0.001
@@ -73,7 +73,7 @@ def main():
     gamma = 0.05
    
     begin = 0
-    end = 10000  
+    end = 10#000  
            
      # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     

@@ -44,63 +44,63 @@ import sys, getopt
 
 
 
-#complex net parameters
-M =2
-
-
-#---------------training data--------------------          
-dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-choice = 'r'
-conv= False
-gpu = False
-
- #neural net parameters---------------------------------------------------------
-
-weights = None
-bias = None  
-reg_f = False
-reg_c = False   
-alpha_f = 0.001
-alpha_c = 0.00025
-graph = True
-
-#-----------hyper parameters
-batch_size = 256
-N = 1 #-note coarse model will be 2* this, fine model with be 4* this  
-learn_rate_c = .5
-f_step_c = .4
-learn_rate_f = .25
-f_step_f = .15
-epochs = 10#0#000  
-  
-gamma = 0.02    
-begin = 0
-end = 10000#50#000
-
-#batch_size = 64
-func_f = torch.tanh
-func_c = F.softmax    
-error_func = nn.CrossEntropyLoss()       
-
-#dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
-    
-#num_features, num_classes, in_channels = dl.getDims(dataset_name)
-                              
-#loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
-
-multilevel = False       
-#------------------------------------------------------------------------------
-#-------------------sg parameters--------------------------
-sg_func = syn.sgLoss
-sg_loss = nn.MSELoss
-#initial optimisation parameters for sg modules
-#sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
-
-
-
 def main(argv):
+
     
+    
+    #complex net parameters
+    M =2
+    
+    
+    #---------------training data--------------------          
+    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    choice = 'r'
+    conv= False
+    gpu = False
+    
+     #neural net parameters---------------------------------------------------------
+    
+    weights = None
+    bias = None  
+    reg_f = False
+    reg_c = False   
+    alpha_f = 0.001
+    alpha_c = 0.00025
+    graph = True
+    
+    #-----------hyper parameters
+    batch_size = 256
+    N = 1 #-note coarse model will be 2* this, fine model with be 4* this  
+    learn_rate_c = .5
+    f_step_c = .4
+    learn_rate_f = .25
+    f_step_f = .15
+    epochs = 10#0#000  
+      
+    gamma = 0.02    
+    begin = 0
+    end = 10000#50#000
+    
+    #batch_size = 64
+    func_f = torch.tanh
+    func_c = F.softmax    
+    error_func = nn.CrossEntropyLoss()       
+    
+    #dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
         
+    #num_features, num_classes, in_channels = dl.getDims(dataset_name)
+                                  
+    #loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
+    
+    multilevel = False       
+    #------------------------------------------------------------------------------
+    #-------------------sg parameters--------------------------
+    sg_func = syn.sgLoss
+    sg_loss = nn.MSELoss
+    #initial optimisation parameters for sg modules
+    #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
+     
+       
     if len(argv) > 0:
         #print(argv)
         N = int(argv[0])

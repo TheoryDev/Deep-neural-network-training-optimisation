@@ -57,12 +57,12 @@ def main(argv):
     
     batch_size = 256
     #hyper parameters
-    N = 4
+    N = 512
     learn_rate = 0.2#0.05
     step = .4
-    epochs = 20#50
+    epochs = 2#0#50
     begin = 0
-    end = 10000
+    end = 50#10000
     reg_f = False
     reg_c = False
     graph = True

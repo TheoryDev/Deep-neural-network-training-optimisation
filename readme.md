@@ -24,7 +24,7 @@ The synthetic gradients have been incorporated in a distributed implementation u
 
 # Code Base
 
-##Core Modules:
+Core Modules:
 ResNet.py
 Antisymmetric.py
 Leapfrog.py
@@ -32,7 +32,7 @@ ellipse.py
 ellipse.py - also has script - main() inside - run ellipse example
 swiss.py- also has script - main() inside - run swiss roll example
 
-## Core Scripts:
+Core Scripts:
 
 The core scripts 
 
@@ -41,7 +41,7 @@ resTest.py - MNIST for resNet
 leapTest.py - MNIST for Leapfrog
 antiTest.py - MNIST for antisymmetric
 
-##PVD Scripts
+PVD Scripts
 PVD.py - also has script - main() inside - run pvd on ellipse, swiss roll, or MNIST
 
 The files are generally quite well commented and easy to understand:

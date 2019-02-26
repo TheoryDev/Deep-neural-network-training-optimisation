@@ -57,7 +57,7 @@ class ellipse:
             theta = torch.rand(N)*two_pi
             #use parametric equations to get ellipse coordinates
             coords = torch.zeros(size = (N,2))
-            coords[:,0], coords[:,1] =  a*torch.cos(theta), b*torch.sin(theta)#0.5*i + torch.rand(N), 0.5*i+torch.rand(N)
+            coords[:,0], coords[:,1] =  a*torch.cos(theta), b*torch.sin(theta)
 
             labels = torch.zeros(N, dtype = torch.long) + i     
             i += 1
@@ -117,15 +117,16 @@ class ellipse:
 
     def train(self, error_func=nn.CrossEntropyLoss, learn_rate = 0.01, epochs = 10, begin = 0, end = 100,
                             f_step = 0.1, reg_f=True, alpha_f=0.01, reg_c= True, alpha_c = 0.01, batch_size = 1, graph=False):
-    
+        #create dataset and loader
         dataset = self.create_dataset(self.examples)
         trainloader = torch.utils.data.DataLoader(dataset, batch_size, shuffle = True)
-
+        #train model
         self.model.train(trainloader, error_func, learn_rate, epochs, begin, end, f_step, reg_f, alpha_f, reg_c, alpha_c, graph)
 
 
 
     def create_dataset(self, dataset):
+        #creates dataset using list of tensors
         datasets = []
         for coords, label in dataset:
             dataset = torch.utils.data.TensorDataset(coords, label)
@@ -137,7 +138,7 @@ class ellipse:
     def test(self, begin, end, N = 100, f_step =0.1, graph = False, batch_size =200):
         
         dataset = self.create_dataset(self.valid)
-       # dataset = self.create_dataset(self.examples)
+        #dataset = self.create_dataset(self.examples)
         trainloader = torch.utils.data.DataLoader(dataset, batch_size = batch_size)
 
         result = self.model.test(trainloader, begin, end, f_step = f_step)

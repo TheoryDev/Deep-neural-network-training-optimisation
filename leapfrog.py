@@ -16,7 +16,19 @@ class Leapfrog(res.ResNet):
 
     def __init__(self, device, N, num_features, num_classes, func_f, func_c, weights = None, bias = None, gpu = False):
         """
-        The leapfrog method uses a new
+        It is initialised with
+            N - number of layers
+            num_features - number of inputs
+            num_classes - number of outpurs
+            func_f - activation function
+            func_c - classifier's activation function i.e softmax
+            weights - weight matrix if none then a random initlisation will be used
+            bias = - bias vector if none then a random initilisation with be used
+            gpu - if True, gpu will be used if available
+            last - set to true if network is the last in the series of networks and sg modules
+            first - set to true if network is the first in the series of networks and sg modules
+            in_chns - number of channels in input data for images 
+            n_filters - number of filters in convolutional layers 
         """
         #use the ResNet superclass initialisation
         super(Leapfrog, self).__init__(device, N, num_features, num_classes, func_f, func_c, weights = weights, bias = bias, gpu = gpu)
@@ -25,7 +37,7 @@ class Leapfrog(res.ResNet):
     def forward(self, x, step=0.1, plot=False):
         #forward propagation for leapfrog
         self.props = x
-        #for first layer (e.h j = 0)
+        #init parameters
         last_x = x
         step_2 = step*step
         direction = None
@@ -33,7 +45,7 @@ class Leapfrog(res.ResNet):
         if self.layers[0].weight.requires_grad == False and self.directions is not None:
             direction = self.directions[0]
             i = 1
-
+        #leap frog equation for first layer  
         x = 2*x + step_2*self.func_f(self.leap_layer(self.layers[0], x))
   
         #propagate through the layers
@@ -46,7 +58,7 @@ class Leapfrog(res.ResNet):
             if layer.weight.requires_grad == False and self.directions is not None:
                 direction = self.directions[i]
                 i += 1
-
+            #leapfrog equation in general    
             x , last_x = 2*x - last_x + step_2*self.func_f(self.leap_layer(layer,x,direction)), x
       
             #store each layer output if needed
@@ -68,11 +80,11 @@ class Leapfrog(res.ResNet):
 
     def leap_layer(self, layer, x, direction = None):
         """
-        This function is used
+        This function is used to implement PVD is direction is not NONE
         """
         K = self.def_neg(layer.weight)
         b = layer.bias
-
+        
         if direction is not None:
             K = K + direction[0]
             b = b + direction[1]

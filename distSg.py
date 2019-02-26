@@ -69,15 +69,15 @@ def main(argv):
     graph = True
     
     #-----------hyper parameters
-    batch_size = 256
-    N = 256#-note  model will be 2* this 
-    learn_rate = 0.2
-    f_step = .5
-    epochs = 2#0#10#000  
+    batch_size = 1024
+    N = 32#128#56#-note  model will be 2* this 
+    learn_rate = 0.25
+    f_step = .025
+    epochs = 10#10#000  
       
     gamma = 0.02    
     begin = 0
-    end = 50#10000#50#000
+    end = 10000#50#000
     
     #batch_size = 64
     func_f = torch.tanh

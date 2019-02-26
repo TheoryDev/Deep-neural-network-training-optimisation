@@ -55,18 +55,18 @@ def main(argv):
     gpu = False
     conv = False
     
-    batch_size = 256
+    batch_size = 1024
     #hyper parameters
-    N = 512
-    learn_rate = 0.2#0.05
-    step = .4
-    epochs = 2#0#50
+    N = 64
+    learn_rate = 0.5#0.05
+    step = .15
+    epochs = 10#20#0#50
     begin = 0
-    end = 50#10000
+    end = 10000
     reg_f = False
     reg_c = False
     graph = True
-    
+    #0.059..
     
     alpha_f = 0.01
     alpha_c = 0.01

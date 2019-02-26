@@ -52,7 +52,7 @@ def main():
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
     conv= False
-    gpu = False
+    gpu = True
     
      #neural net parameters---------------------------------------------------------
     
@@ -66,10 +66,10 @@ def main():
     
     #-----------hyper parameters
     batch_size = 256
-    N = 2#-note  model will be 2* this 
+    N = 64#-note  model will be 2* this 
     learn_rate = 0.05
-    f_step = 0.5
-    epochs = 20#10#00   
+    f_step = 0.25
+    epochs = 10#10#00   
       
     gamma = 0.02    
     begin = 0

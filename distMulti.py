@@ -54,7 +54,7 @@ def main(argv):
     
     #---------------training data--------------------          
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-    choice = 'r'
+    choice = 'v'
     conv= False
     gpu = False
     
@@ -69,13 +69,13 @@ def main(argv):
     graph = True
     
     #-----------hyper parameters
-    batch_size = 256
-    N = 1 #-note coarse model will be 2* this, fine model with be 4* this  
-    learn_rate_c = .5
-    f_step_c = .4
+    batch_size = 1024
+    N = 16 #-note coarse model will be 2* this, fine model with be 4* this  
+    learn_rate_c = .25
+    f_step_c = .1
     learn_rate_f = .25
-    f_step_f = .15
-    epochs = 10#0#000  
+    f_step_f = .025 #coarse Verlet 64 could use .075
+    epochs = 5#0#000  
       
     gamma = 0.02    
     begin = 0
@@ -154,7 +154,7 @@ def main(argv):
     torch.cuda.synchronize()
     coarse_time = time.time() - coarse_time
     
-    #print("after coarse train")
+    print("after coarse train")
     coarse_result = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step_c)
     #print("after coarse test")
     complexNet.double_complex_net()

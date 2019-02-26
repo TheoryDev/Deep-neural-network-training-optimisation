@@ -23,8 +23,14 @@ class ResNet(nn.Module):
             num_features - number of inputs
             num_classes - number of outpurs
             func_f - activation function
+            func_c - classifier's activation function i.e softmax
             weights - weight matrix if none then a random initlisation will be used
             bias = - bias vector if none then a random initilisation with be used
+            gpu - if True, gpu will be used if available
+            last - set to true if network is the last in the series of networks and sg modules
+            first - set to true if network is the first in the series of networks and sg modules
+            in_chns - number of channels in input data for images 
+            n_filters - number of filters in convolutional layers            
             """
 
             super(ResNet, self).__init__()
@@ -52,6 +58,7 @@ class ResNet(nn.Module):
             #init layers for CNN
             if conv == True:
                 if first == True:
+                    #scales input to correct number of channels
                     self.firstMask = nn.Conv2d(in_chns,n_filters,3, padding=1) 
                 for i in range(0, N):                    
                     self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))
@@ -64,29 +71,29 @@ class ResNet(nn.Module):
                     self.layers.append(nn.Linear(num_features*in_chns, num_features*in_chns))
                 #classifier  
                 if last == True:                  
-                    self.classifier = nn.Linear(num_features*in_chns,num_classes)            
-               
-            #print("conv", self.conv)
-            #print("gpu", self.gpu)
+                    self.classifier = nn.Linear(num_features*in_chns,num_classes)           
+        
             
         def forward(self, x, step=0.1, plot=False):
-            #forward propagationelf.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1)
+  
             i = 0    
-            #print(i, x.shape)        
+            #start list of coordinates        
             self.props = x
             
+            #if using conv nets need to scale input up to use n_filters
             if self.conv and self.first:
                 x = self.func_f(self.firstMask(x))            
             
-            #self.step = step
+            #propagate through layers
             for layer in self.layers:
+                #if self.directions is not None then PVD is used
                 if self.directions == None or layer.weight.requires_grad == True:
                     #print(self.func_f(layer(x)).shape)
                     x = x + step*self.func_f(layer(x))
                 else:
                     w , b = self.directions[i]                
                     x = x + step*(self.func_f(layer(x)) + x.matmul(w) + b)
-                    #increment i
+                    #increment 
                     i += 1
                 #store each layer output if needed
                 if plot == True:
@@ -98,7 +105,7 @@ class ResNet(nn.Module):
                 if self.conv == True:
                       x = x.view(-1, self.num_features*self.n_filters)
                 x = self.func_c(self.classifier(x), dim = 1)
-            #print("xs", x.shape)
+           
             return x
 
             #can assign weights to nn.CrossEntropyLoss in the case of unbalanced training sets
@@ -118,16 +125,17 @@ class ResNet(nn.Module):
                steps - used for PVD 
                
             """
+            #counters for time
             load_t = 0.0
             forward_t = 0.0
             back_t = 0.0
             view_t = 0.0
             
             #set up optimiser         
-            params = filter(lambda param: param.requires_grad == True, self.parameters())                
-                 
-            directions = copy.deepcopy(self.directions)
-            #self.directions = None
+            params = filter(lambda param: param.requires_grad == True, self.parameters())     
+                         
+            #if using PVD a deepcopy of directions are made
+            directions = copy.deepcopy(self.directions)          
             
             first_round = False
             
@@ -137,22 +145,18 @@ class ResNet(nn.Module):
                 params.append(mu)
             
             #create optimiser
-            optimiser = optim.SGD(params, lr = learn_rate)
-            
-            #for p in self.parameters():
-             #   print(p.requires_grad)
-            
+            optimiser = optim.SGD(params, lr = learn_rate)           
+                      
             rounds, losses = [], []
             #train for epochs
             t_net = 0.0
             for epoch in range(epochs):
-                #get loss per epoch
+                #loss per epoch
                 epoch_loss = 0
                 i = 0              
                 batch_t = time.perf_counter() 
                 #use islice to sample from [begin] to [end] batches
-                #iter_load = iter(trainloader)
-                #for i in range(235):
+                
                 for inputs, labels in itertools.islice(trainloader, begin, end):
                     #get batch of input features and convert from (28*28->784 MNIST)           
                     #inputs, labels = next(iter_load)
@@ -163,14 +167,14 @@ class ResNet(nn.Module):
                     if self.gpu == True:
                         inputs, labels = inputs.to(self.device), labels.to(self.device)
                         torch.cuda.synchronize()
-                    #print("labels", labels)
+                   
                     if self.conv == False:                   
                         tmp_v = time.perf_counter()
+                        #flatten image grid to row vector
                         inputs = inputs.view(-1, self.num_features)
                         view_t += time.perf_counter() - tmp_v
-                    #print("inputs", inputs.shape)
-                    #print("labels", labels.shape)                    
-                    
+                                      
+                    #time taken to load data
                     load_t += time.perf_counter() - batch_t
                   
                     t = time.perf_counter()
@@ -179,33 +183,25 @@ class ResNet(nn.Module):
                     torch.cuda.synchronize()
                     tmp_forward = time.perf_counter()    
                     outputs = self(inputs, f_step)
-                   # print("o:", outputs.shape)
+                  
                     loss = error_func(outputs, labels)
                     torch.cuda.synchronize()
                     forward_t += time.perf_counter() - tmp_forward
                     #add forward propagation regularisation term
-                    if reg_f == True:
-                        #reg_loss =  alpha*self.layer_reg(f_step) + alph
+                    if reg_f == True:                        
                         loss += alpha_f*self.layer_reg(f_step)
                     #add classifier regularisation term
                     if reg_c == True:
                         loss +=  alpha_c*self.class_reg()
-                  #  print("before backward")
-                  #  for p in params:
-                  #      print(p)
+                  
                     torch.cuda.synchronize()
                     tmp_b = time.perf_counter()
                     #calculate the gradients for the backpropagations
                     loss.backward()
-                 #   print(loss.grad)
-                 #   print("after backward")
-                #    for p in params:
-                #        print(p)
+               
                     #update the weights
                     optimiser.step()
-                #    print("after optimiser step")             
-                 #   for p in params:
-                 #       print(p)
+               
                     torch.cuda.synchronize()
                     back_t += time.perf_counter() - tmp_b
                     epoch_loss += loss.item()
@@ -213,8 +209,8 @@ class ResNet(nn.Module):
                     t_net += time.perf_counter() - t
                     
                     batch_t = time.perf_counter() 
-                    #print("i", i)
                     
+                #multiplies direction by mu   
                 if first_round == True:                 
                    self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)
                    mu.requires_grad = False
@@ -303,7 +299,7 @@ class ResNet(nn.Module):
 
                 #get predictions- by getting the indices corresponding to max arguments
                 pred = torch.max(outputs, 1)[1]
-                #print(inputs, labels, pred)
+                
                 #get number of correct examples in batch
                 correct = (pred == labels).sum().item()
 
@@ -416,13 +412,10 @@ class ResNet(nn.Module):
             plt.grid()
             plt.show()
 
+
             """TO DO:
             -fix only 9000 validation
-            -set flags to inputs to gpu if not cpu
-            -set device as an instance object then use self.to(device)
-            -then no need to pass parameters just use self.device
-            -lower number of reset_parameters
-            -validation make selection-possibly function
+            
             """
 
         def roll(self, mat):
@@ -442,12 +435,12 @@ class ResNet(nn.Module):
             layers = [layer for layer in self.layers]
 
             for i in np.arange(0, end, 2):
-            #    print("adding")
+                #case for convolutional neural networks
                 if self.conv ==  True:
                     layers.insert(i, nn.Conv2d(self.n_filters,self.n_filters,3, padding=1))
                 else:            
                     layers.insert(i, nn.Linear(self.num_features, self.num_features))
-            #re-encapsulate layers
+            #re-encapsulate layers within container
             self.layers = nn.ModuleList(layers)
             end -= 1
 

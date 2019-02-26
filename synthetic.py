@@ -25,7 +25,7 @@ import ResNet as res
    
 
  
-
+"""nolonger used 
 def sgLoss(args, h, y, grad, loss=mse):
     #sg = h*args[0] + y*args[1] + args[2]
     x = sg(args, h, y)
@@ -37,7 +37,7 @@ def sg(args, h, y):
     print("y", y)
     print("args[1]", args[1].shape)
     return h*args[0]  + y*args[1] + args[2]    
-
+"""
 
 class LinearRegressionSG(nn.Module):
     """
@@ -67,17 +67,21 @@ class synthetic_module:
         """
         The initialisation takes a function and its arguments and and
         an optimiser and its arguments.
-        """
-        #if self.gpu == True:
-            #num_features *= 6
+        num_features -  the number of input features
+        function - activation function for neural network that approximates gradients
+        loss - loss function
+        args - no longer used (to be removed at a later date)
+        gpu - boolean flag for gpu        
+        """       
             
         self.__num_features = num_features
         self.__function = function
         self.__loss = loss
         self.__args = args  
-        self.__lin = linear_model.LinearRegression(normalize=False)
+        #self.__lin = linear_model.LinearRegression(normalize=False)
         self.__device = device
         self.__gpu = gpu
+        #__linSG is the neural network used to predict the synthetic gradients
         self.__linSG = LinearRegressionSG(num_features, conv, in_channels, n_filters)
         self.__conv = conv
         if self.__gpu == True:
@@ -109,33 +113,24 @@ class synthetic_module:
         The optimiser function 
         """     
         if h is None:
-            h = self.__h_before
-        
-        #result = minimize(fun=sgLoss, x0=self.__args, args=(h, y, grad, self.__loss,))
-        #self.__args = result.x
-        #return #result.x       
+            h = self.__h_before       
+     
         
     
     def calculate_sg(self, h, y,func=sg):
-        
+       #reshape labels 
        if self.__conv == True:
-           tmp_y = y.reshape(y.shape[0],1,28,28)
-           #print("y",tmp_y[0])
-           #print("h", h[0])
-           #tmp_y = y self.convLabels(y, h[0][0].shape, 10)#.to(self.__device)
-           #if self.__gpu == True:
-               #tmp_y = tmp_y.to(self.__device)
+           #for convolutional neural networks I am not using labels yet to conditional sg
+           tmp_y = y.reshape(y.shape[0],1,28,28)         
        else:
            tmp_y = y.reshape((len(y),1)).float()  
-       #reshape labels y
+       
        tmp_h = h.detach()
-       #print(tmp_h, tmp_y)
-       x =  torch.cat((tmp_h, tmp_y), dim=1)   
-       #print("x",x[0][0], x[0][6])
+       #cat inputs and labels
+       x =  torch.cat((tmp_h, tmp_y), dim=1)          
        #get prediction
        pred = self.__linSG(x)        
-       #if self.__gpu == True:
-           #pred = pred.reshape(h_shape)       
+         
        return pred    
       
            
@@ -161,11 +156,8 @@ class synthetic_module:
             return
         
         #ecalculate synthetic gradient        
-        self.syn_grad = self.calculate_sg(self.__h_before, y)
-        #print("sg", self.syn_grad)
-        #backpropagate synthetic gradient into sub-nn
-        #print("hs", self.__h_before.shape)
-        #print("sg", syn_grad)        
+        self.syn_grad = self.calculate_sg(self.__h_before, y)       
+        #backpropagate synthetic gradient into sub-nn             
         self.__h_before.backward(self.syn_grad.detach())
         
     def optimise(self, y, multi=False, para=False, gradient=None):
@@ -174,29 +166,20 @@ class synthetic_module:
         It obtains the gradient dL/dh^n from the h_after instance attribute. 
         It then calls the optimise function.        
         """       
-        #self.zero_optimiser() 
-        #pred = self.calculate_sg(self.__h_before.detach(), y)          
+                 
         self.zero_optimiser()               
         #get real gradient
         if para == False:
             grad = self.__h_after.grad.data
         else:
             grad = gradient
-        #optimise gradient
-       
-        #print("syn_grad", self.syn_grad, "real grad", grad)
-        
+        #optimise gradient      
+               
         error_func = nn.MSELoss()#(pred ,grad)
         loss = error_func(self.syn_grad, grad)
         
-        #regularisation - may use in future
-        # = 0.0
-        #for param in self.__linSG.parameters():
-            #print("param", param)
-            #t = time.perf_counter()
-            #loss += torch.sum(torch.pow(param,2))
-            #print(time.perf_counter()-t)
-        #print("sg loss", loss)
+        #regularisation - may add in future    
+       
         #calculate loss
         loss.backward()        
         #update weights
@@ -206,39 +189,21 @@ class synthetic_module:
 
     def first_optimise(self, num_features = 2, num_classes = 2, batch_size=10):
         """
-        used for old sg- will remove
+        used for old sg- will remove at a later date
         """
         #randomly initialise sg modules
-        #print("num_classes", num_classes, "num_feats", num_features, "batch", batch_size)
-        
+               
         h = np.random.normal(size=(batch_size, num_features))
         y = np.random.normal(size=(batch_size, 1))
         grad = np.random.normal(size=(batch_size, num_features))
         self.__lin.fit(np.concatenate((h,y), axis=1), grad)
         
-       # print("coefficients",self.__lin.coef_.shape)       
+          
     
     def convLabels(self, labels, y_shape = (28, 28), num_classes=10):
         batch_size = labels.shape[0]
-        convLabels = torch.zeros(batch_size, 10, *y_shape)#.to(self.__device)
+        convLabels = torch.zeros(batch_size, 10, *y_shape)
         for i in range(batch_size):
             convLabels[i][labels[i]] += 1
         
-        return convLabels#.to(self.__device)
-        
-
-    
-def main():
-    y = np.array([[0.,1.],[0.6,0.8]])
-    h = np.array([[1.,1.],[0.1,0.9]]) 
-    grad = np.array([[0.8, 0.5]])
-    s = synthetic_module()
-    
-    result = s.optimise_SG(y, grad, h)
-    print(result)
-
-    est = s.calculate_sg(h,y)
-    print("sg: ", est, "real grad: ", grad)
-
-if __name__ == '__main__':
-    main()
+        return convLabels     

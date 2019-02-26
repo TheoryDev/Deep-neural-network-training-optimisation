@@ -70,7 +70,7 @@ anti_res = anti.AntiSymResNet(device, N, num_features, num_classes, torch.tanh, 
 if gpu == True:
     anti_res.to(device)
 
-
+#train model
 anti_res.train(trainloader, error_func, learn_rate, epochs, begin, end, step, reg, alpha, graph = True)
 
 

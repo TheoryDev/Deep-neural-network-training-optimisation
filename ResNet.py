@@ -412,7 +412,6 @@ class ResNet(nn.Module):
             plt.grid()
             plt.show()
 
-
             """TO DO:
             -fix only 9000 validation
             

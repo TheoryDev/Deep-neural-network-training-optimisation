@@ -210,8 +210,7 @@ def main():
     
     start_time = time.time()
     myE.train(error_func, learn_rate, epochs, begin, end, step, reg_f, alpha_f, reg_c, alpha_c, batch_size, graph=True)
-    end_time = time.time() - start_time
-    
+    end_time = time.time() - start_time   
   
     #torch.save(myE.model.state_dict(), "ELN64.pt")
     

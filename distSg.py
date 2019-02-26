@@ -1,12 +1,3 @@
-#items ist of connections
-    
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 27 18:20:41 2018
-
-@author: Corey
-"""
-
 #from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -42,15 +33,10 @@ import Verlet as ver
 import dataloader as dl
 import sys, getopt
 
-
-
-
 def main(argv):
     
-        #complex net parameters
-    M = 2
-    
-    
+    #complex net parameters
+    M = 2        
     #---------------training data--------------------
               
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
@@ -82,25 +68,13 @@ def main(argv):
     #batch_size = 64
     func_f = torch.tanh
     func_c = F.softmax    
-    error_func = nn.CrossEntropyLoss()       
-    
-    #dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
-        
-    #num_features, num_classes, in_channels = dl.getDims(dataset_name)
-                                  
-    #loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
-    
+    error_func = nn.CrossEntropyLoss()        
+            
     multilevel = False       
     #------------------------------------------------------------------------------
     #-------------------sg parameters--------------------------
     sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss
-    #initial optimisation parameters for sg modules
-    #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
-    
-        
-    
-    
+    sg_loss = nn.MSELoss       
     
     if len(argv) > 0:
         #print(argv)
@@ -115,15 +89,15 @@ def main(argv):
     np.random.seed(11)
     torch.manual_seed(11)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-        
+    torch.backends.cudnn.benchmark = False        
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
         
     num_features, num_classes, in_channels = dl.getDims(dataset_name)
-                                  
+     
+    #load training dataset                         
     loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
     
     multilevel = False       
@@ -131,9 +105,7 @@ def main(argv):
     #-------------------sg parameters--------------------------
     sg_func = syn.sgLoss
     sg_loss = nn.MSELoss
-    #initial optimisation parameters for sg modules
-    #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
-    
+       
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     
@@ -146,51 +118,22 @@ def main(argv):
       
     #accBefore = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
-    #train_network
-    #torch.cuda.synchronize()
-    #start_time = time.perf_counter()
+    #train model with distributed algorithm
     train_time = complexNet.distTrain(loader, error_func, learn_rate, epochs, begin, end
-                    ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, False, M)
+                    ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, False, M)   
     
-    
-    #accAfter = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
-      
-   
-    #torch.cuda.synchronize()
-    #end_time = time.perf_counter() - start_time    
-     
-    #print("total time in series:" , end_time)
-    #During training, each epoch we see the loss and mse for synthetic gradient
     
     result_train = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
+    #load test dataset
     loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = False)
     
     result_test = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
     print("fine train result", result_train, "\n")
     print("fine test result", result_test, "\n")
-    
-    #theoretical time is the training time using the lowest on each batch of training
-    #print("Total time:", train_time[0], "\ntheoretical time:", train_time[1])#, "\nspeed up:", train_time[2])  
-    #print("Batch time adjusted speed up", train_time[3])         
-    print("train time", train_time)        
+          
+    print("train time", train_time)  
    
-
-
-
 if __name__ == '__main__':
-   
-    #mp.set_start_method('spawn')
-    #num_procs = 2
     main(sys.argv[1:])
-    
-    
-    #create model
-    #create processes 
-    #give processes a dnn and parameters   
-    #start processes
-    #start a loop through training data in this 
-    
-    
-  

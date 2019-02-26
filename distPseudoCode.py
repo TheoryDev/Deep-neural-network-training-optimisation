@@ -1,12 +1,3 @@
-#items ist of connections
-    
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 27 18:20:41 2018
-
-@author: Corey
-"""
-
 #from __future__ import print_function
 import torch
 import torch.nn as nn

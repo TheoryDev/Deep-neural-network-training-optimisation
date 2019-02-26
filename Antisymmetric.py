@@ -72,7 +72,7 @@ class AntiSymResNet(res.ResNet):
             delW, delB = direction
             mat = mat + delW.transpose(1,0) - delW
             b = b + delB
-            
+        #create diffusion matrix    
         diffusion = gamma*torch.eye(layer.weight.shape[0])
         if self.gpu == True:
             mat -= diffusion.to(self.device)

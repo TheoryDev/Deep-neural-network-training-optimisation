@@ -30,9 +30,7 @@ class PVD:
         """
         self.device = device
         self.num_proc = num_proc
-        #self.models = self.set_models(N, num_features, num_classes, func_f, func_c, weights, bias, gamma, gpu)
-        #self.models = []
-
+       
     def set_models(self, N = 3, num_features = 2, num_classes = 2, func_f = torch.tanh, func_c =F.softmax, weights = None, bias = None, gpu=False, choice = None, gamma = 0.01):
         """
         allows the user to set the model choices defaults to resnet
@@ -104,8 +102,6 @@ class PVD:
             i = j
             model.unfreeze_classifier()
         #the last model always has the classifier
-        #self.models[-1].unfreeze_classifier()
-        #made classifier get backproped in all cases only first- messed up the mu
 
     def gen_directions(self, model, trainloader, error_func, f_step = 0.1, plot=False):
         #clear gradient buffers
@@ -130,14 +126,8 @@ class PVD:
 
         directions = []
 
-        for layer in model.layers:
-            #if layers.requires_grad == True
-    #        print("gradw", layer.weight.grad, "gradb", layer.bias.grad)
+        for layer in model.layers:            
             directions.append([layer.weight.grad, layer.bias.grad])
-
-        #directions.append([model.classifier.weight.grad, model.classifier.bias.grad])
-
-    #    print("direct", directions)
 
         return directions
 
@@ -154,12 +144,7 @@ class PVD:
         #freeze parameters not in the block
         steps = round(self.models[0].N/self.num_proc)
         self.freeze_blocks(steps)
-        
-      #  for model in self.models:
-      ##      for layer in model.layers:
-        #        print (layer.weight.requires_grad)
-       #     print (model.classifier.weight.grad)
-        
+                
         #run pvd for iterations
         for i in range(iterations):         
             
@@ -198,8 +183,7 @@ class PVD:
             #update weights
             self.add_direction(self.models[min_index], mu_direction)
 
-            #after weights updated with forget me not terms copy to all others           
-
+            #after weights updated with forget me not terms copy to all others          
             acc = self.models[min_index].test(trainloader, 0, 1000, f_step)
 
             print("result:", acc)
@@ -236,8 +220,7 @@ class PVD:
         mu = torch.rand((self.num_proc-1), requires_grad = True)
 
         if model.gpu == True:
-            mu = torch.rand((self.num_proc-1), requires_grad = True, device = "cuda")
-      
+            mu = torch.rand((self.num_proc-1), requires_grad = True, device = "cuda")      
 
         model.directions = copy.deepcopy(directions)
 
@@ -275,7 +258,6 @@ class PVD:
         print("start", start, "end", end)
         
         d = directions[:start] + directions[end:]
-#        print("d", d)
         return d
 
     def copy_model(self, index):
@@ -319,9 +301,7 @@ class PVD:
                 w, b = mu_directions[index]
                 layer.weight.data += w
                 layer.bias.data += b
-                index += 1
-
-    
+                index += 1    
 
 def main():
 
@@ -385,10 +365,7 @@ def main():
         dataset = myS.create_dataset(myS.examples)
         trainloader = torch.utils.data.DataLoader(dataset, batch_size = 10, shuffle = True)
         datasetT = myS.create_dataset(myS.valid)
-        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)
-
-    
-
+        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)  
 
     
     if MNIST:

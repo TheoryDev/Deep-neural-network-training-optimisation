@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Dec 22 23:00:24 2018
-
-@author: Corey
-"""
 import numpy as np
 import h5py
 import torch

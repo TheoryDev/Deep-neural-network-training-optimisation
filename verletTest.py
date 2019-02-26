@@ -57,10 +57,7 @@ def main():
     error_func=nn.CrossEntropyLoss()
    # print(end)
     transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-                    #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
-
-    #trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                            #download=download, transform=transform)
+                    #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])   
     
     myFile = h5py.File('./data/MNIST.h5', 'r')#, driver='stdio')
     coords = myFile.get('MNIST_train_inputs')
@@ -70,8 +67,7 @@ def main():
     label = torch.from_numpy(np.array(label))
     label = label.long()
     coords = coords.float()
-    #print("coords:", coords)
-    #print("labels:", label)
+   
     myFile.close()
     trainset = torch.utils.data.TensorDataset(coords, label)    
     
@@ -98,9 +94,6 @@ def main():
     test_error = myV.test(testloader, begin, end, step)
 
     print("training error", train_error, "validation error: ", valid_error, "test error", test_error)
-    
-
-
 
 if __name__ == '__main__':
     main()

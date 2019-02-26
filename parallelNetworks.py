@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Nov 18 20:46:39 2018
-"""
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -16,7 +12,6 @@ from sklearn.metrics import mean_squared_error as mse
 import itertools
 import time
 import multiprocessing as mp
-
 
 #dnn codebase
 import ResNet as res
@@ -112,18 +107,15 @@ class complexNeuralNetwork:
                 net.to(self.__device)
             
     def init_sgs(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), 
-                 num_features=2, batch_size=2):#, trainloader):  
-        #store synthetic gradient module arguments            
+                 num_features=2, batch_size=2): 
         
+        #store synthetic gradient module arguments                
         self.__sgArgs = (function, loss, args, self.__gpu, num_features)
     
         #add sg modules           
         for i in range(self.__M - 1):
             s = self.create_sg(*self.__sgArgs)
-            self.__sgmodules.append(s)       
-    
-        #for s in self.__sgmodules:
-           # s.first_optimise(num_features, batch_size)
+            self.__sgmodules.append(s)    
     
     def init_optimisers(self, learn_rate = 0.001):        
         """
@@ -482,8 +474,7 @@ class complexNeuralNetwork:
         torch.cuda.synchronize()
         t = time.perf_counter()
         
-        for epoch in range(epochs):
-        
+        for epoch in range(epochs):        
             
             epoch_loss = 0    
             i = 0
@@ -491,21 +482,17 @@ class complexNeuralNetwork:
             for inputs, labels in itertools.islice(trainloader, begin, end):
                 
                 if self.__conv == False:
-                    inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)
-                
-                #print("inputs", inputs)
-                
+                    #flatten inputs 
+                    inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)             
+                          
                 #send batch through pipes
                 pipes[0][0].send([inputs, labels])
-                #receive loss
                 
-                
+                #receive loss              
                 loss = pipes[-1][1].recv()
                 
-                epoch_loss += loss             
-              
-                i += 1
-                #break
+                epoch_loss += loss           
+                i += 1               
        
             print("epoch", epoch+1, "loss", epoch_loss/i)
             
@@ -589,15 +576,12 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
         #get next batch
         data = pipeA.recv()
     
-    #send terminating none signal to next sub net
+    #send terminating none signal to next sub neural network
     pipeB.send(None)   
        
             
 def main():
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    
-    
-    
-
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") 
+       
 if __name__ == '__main__':
     main()

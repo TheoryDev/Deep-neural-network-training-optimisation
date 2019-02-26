@@ -51,8 +51,6 @@ def main():
     error_func=nn.CrossEntropyLoss()
     
     t_data = time.perf_counter()
-    
-    #transform = transforms.Compose([transforms.ToTensor()])  
                                 
     dataloader = dl.InMemDataLoader(dataset)
                                       
@@ -74,8 +72,7 @@ def main():
         
     print("results: ", results)
     print("--- %s seconds ---" % (train_time))
-    #print("in_net time", net_t)
-    #myFile.close()
+    
 if __name__ == '__main__':
     main()
 

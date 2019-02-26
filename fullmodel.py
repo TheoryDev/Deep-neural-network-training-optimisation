@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec 27 18:20:41 2018
-
-@author: Corey
-"""
-
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -18,7 +11,6 @@ import scipy as sp
 from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error as mse
 import itertools
-
 
 #dnn codebase
 import ResNet as res
@@ -85,9 +77,7 @@ def main(argv):
         choice = argv[4]
         graph = argv[5]
         print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice, "graph", graph)  
-    
-    ##return
-    
+     
     model = chooseModel(dataset_name, device, N, func_f, func_c, gpu, choice, conv=conv, first=True)    
     
     dataloader = dl.InMemDataLoader(dataset_name)
@@ -126,13 +116,11 @@ def chooseModel(dataset, device, N, func_f, func_c, gpu, choice, last=True,
     if choice == 'v':
                 print("v")
                 model = ver.Verlet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
-                                   , conv, first, in_chns, n_filters)
-    
+                                   , conv, first, in_chns, n_filters)    
     else:
                 print("r")
                 model = res.ResNet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
-                                   , conv, first, in_chns, n_filters)
-    
+                                   , conv, first, in_chns, n_filters)    
     return model
     
 

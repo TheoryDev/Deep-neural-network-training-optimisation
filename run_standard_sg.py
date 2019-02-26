@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Dec  9 19:38:25 2018
-
-@author: Corey
-"""
-
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -35,6 +28,10 @@ import dataloader as dl
 
 def main():
 
+    """
+    The training algorithm incorporates synthetic gradients and trains the sub neural networks
+    in series. It can be used to calculate theoretical speed-ups factors for the training time.
+    """
     
     
     #complex net parameters
@@ -91,9 +88,7 @@ def main():
     #-------------------sg parameters--------------------------
     sg_func = syn.sgLoss
     sg_loss = nn.MSELoss
-    #initial optimisation parameters for sg modules
-    #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
-    
+       
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     

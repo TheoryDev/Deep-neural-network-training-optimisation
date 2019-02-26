@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov 29 21:40:55 2018
-
-@author: koryz
-"""
-
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -18,7 +11,6 @@ import scipy as sp
 from scipy.optimize import minimize
 from sklearn.metrics import mean_squared_error as mse
 import itertools
-
 
 #dnn codebase
 import ResNet as res
@@ -75,7 +67,7 @@ def main():
     begin = 0
     end = 10#000  
            
-     # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     
     dataloader = dl.InMemDataLoader(dataset_name)
         
@@ -111,9 +103,9 @@ def main():
     torch.cuda.synchronize()
     coarse_time = time.time() - coarse_time
     
-    #print("after coarse train")
+   
     coarse_result = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step_c)
-    #print("after coarse test")
+    
     complexNet.double_complex_net()
     #print("double it")      
         

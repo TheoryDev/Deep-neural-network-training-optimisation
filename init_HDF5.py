@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
 """
-Created on Thu Dec 27 15:07:02 2018
-
-@author: Corey
-
+This script downloads the MNIST, CIFAR10 and CIFAR100 datasets and converts them 
+to the HDF5 format and saves the result.
 """
+
 
 def main():
 
@@ -26,15 +24,13 @@ def main():
     print("CIFAR100 stored in HDF5")
     
     """
+    THE CODE BELOW WILL BE USED LATER FOR CNNs
     
-    
-      #store MNIST in HDF5
-   # myMemLoader = dl.InMemDataLoader(dataset= "MNIST", conv_sg=True)
+    #store MNIST in HDF5
+    #myMemLoader = dl.InMemDataLoader(dataset= "MNIST", conv_sg=True)
     #myMemLoader.storeAsHDF5()
-    #print("MNIST stored in HDF5")
-    
-    
-    
+    #print("MNIST stored in HDF5")   
+       
     #store CIFAR 10
     myMemLoader = dl.InMemDataLoader(dataset= "CIFAR10", conv_sg=True)
     myMemLoader.storeAsHDF5()
@@ -44,7 +40,6 @@ def main():
     myMemLoader = dl.InMemDataLoader(dataset= "CIFAR100", conv_sg=True)
     myMemLoader.storeAsHDF5()
     print("CIFAR100 stored in HDF5")
-    
     """
     
 if __name__ == '__main__':

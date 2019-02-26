@@ -73,8 +73,6 @@ def main():
     test_error = leap.test(testloader, begin, end, step)
 
     print("training error", train_error, "validation error: ", valid_error, "test error", test_error)   
-
-
   
     print("--- %s seconds ---" % (time.time() - start_time))
     

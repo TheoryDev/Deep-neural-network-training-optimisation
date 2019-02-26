@@ -1,11 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Dec 23 22:36:31 2018
-
-@author: Corey
-
-"""
-
 import numpy as np
 import h5py
 import torch
@@ -17,7 +9,12 @@ import ellipse as el
 import swiss as sw
 
 
-class InMemDataLoader:    
+class InMemDataLoader:   
+    """
+    This class is used to download the datasets and converts them into the HDF5 format. 
+    The new files will then be used to hold the dataset in memory and reduce the taken to load data 
+    during training
+    """
 
     def __init__(self, dataset = 'MNIST', driver = None, root = './data/', conv_sg=False):
         self.driver = driver
@@ -91,7 +88,7 @@ class InMemDataLoader:
             
             store_inputs = torch.cat((store_inputs, inputs))
             store_labels = torch.cat((store_labels, labels))           
-        #print("loop done")
+        
         myFile.create_dataset("train_labels", data = store_labels.numpy())    
         myFile.create_dataset("train_inputs", data = store_inputs.numpy(), dtype=np.float)     
         
@@ -122,10 +119,8 @@ class InMemDataLoader:
         returns the dataset for the given database, for test dataset set train = False
         """
         
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") 
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")        
         
-        
-        #put code for Ellipse/Swiss roll
         if self.dataset == "ELLIPSE":
             a = np.array([[0,1.0],[1.0,2.0]])            
             b = a*0.5                            
@@ -167,13 +162,8 @@ class InMemDataLoader:
         features = features.float()
         
         if self.conv_sg == False:
-            labels = labels.long()
-        
-        
-        #move to device
-        #features = features.to(device)
-        #labels = labels.to(device)
-        
+            labels = labels.long()       
+                     
         dataset = torch.utils.data.TensorDataset(features, labels)
         
         return dataset
@@ -218,6 +208,7 @@ def getDims(dataset):
 
 """
 To do 
+    add support for labels for convnets
     add support for transforms
 
 """

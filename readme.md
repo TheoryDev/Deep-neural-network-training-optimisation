@@ -24,17 +24,6 @@ numpy
 scipy
 os
 
-Modules:
-ResNet.py
-Antisymmetric.py
-Leapfrog.py
-ellipse.py
-
-PVD.py - also has script - main() inside - run pvd on ellipse, swiss roll, or MNIST
-ellipse.py - also has script - main() inside - run ellipse example
-swiss.py- also has script - main() inside - run swiss roll example
-
-
 ##Scripts for synthetic gradients:
 
 The scripts below build, train and test a DNN. The user is free to specify the 
@@ -59,36 +48,4 @@ distMult.py
 ```
 PVD.py trains the DNN using the PVD algorithm. 
 ```
-
-The function train() is used to train deep neural networks for a chosen 
-number of epochs of training. It applies the backpropagation algorithm
-parameters:   trainloader - dataloader object that stores examples
-           error_func - error function
-           begin - starting batch number (i.e start at n'th batch)
-           end - stop iteration after (end - begin) many batches
-           reg_f - if true use regularisation on forward propagation
-           alpha_f - regularisation parameter for forward prop regularisation
-           reg_c - if true use regularisation on classifier
-           alpha_c - regularisation parameter for classifier regularisation
-           graph - if true shows loss curve
-           mu - used for PVD
-           steps - used for PVD 
-
-
-ParallelNetworks.py
------------------------------------------------------------------------
-This module contains the complexNeuralNetwork class and it is used to model
-a complex neural network of sub-neural networks and synthetic gradient modules.
-
-The complexNeuralNetwork class is initialised with:
-	device - i.e cpu or gpu
-	M - the number of neural networks, there will be (M-1) synthetic gradient modules
-	
-	The class has methods to train the models using synthetic gradients. 
-	
-
-----------------------------------
-The PVD code is not used for synthetic gradients
------------------------------------------------------------------------
-
 

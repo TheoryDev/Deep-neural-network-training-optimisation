@@ -57,9 +57,9 @@ class ResNet(nn.Module):
            
             #init layers for CNN
             if conv == True:
-                if first == True:
+                #if first == True:
                     #scales input to correct number of channels
-                    self.firstMask = nn.Conv2d(in_chns,n_filters,3, padding=1) 
+                    #self.firstMask = nn.Conv2d(in_chns,n_filters,3, padding=1) 
                 for i in range(0, N):                    
                     self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))
                 #classifier
@@ -82,7 +82,12 @@ class ResNet(nn.Module):
             
             #if using conv nets need to scale input up to use n_filters
             if self.conv and self.first:
-                x = self.func_f(self.firstMask(x))            
+                if self.in_chns == 1:
+                    #for MNIST we have 1 channel so copy input channels x6
+                    x = torch.cat((x,x,x,x,x,x), dim=1)#self.func_f(self.firstMask(x))    
+                elif self.in_chns == 3:
+                    # for CIFAR we have 3 channels so copy input channels x2
+                    x = torch.cat((x,x), dim=1)
             
             #propagate through layers
             for layer in self.layers:
@@ -230,11 +235,11 @@ class ResNet(nn.Module):
                 plt.xlabel("epochs")
                 plt.ylabel("loss")
                 plt.show()
-            print("in_net time", t_net) 
-            print("batch_time", load_t)
-            print("back_time", back_t)
-            print("forward_time", forward_t)
-            print("view_time", view_t)
+                print("in_net time", t_net) 
+                print("batch_time", load_t)
+                print("back_time", back_t)
+                print("forward_time", forward_t)
+                print("view_time", view_t)
             return epoch_loss/epoch_freq
 
         def validation(self, trainloader, start_v = 50000, m ="f_step", min=0.1, max=1.0 ,num = 10

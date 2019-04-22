@@ -1,4 +1,16 @@
-# Dependencies
+#Optimising the Training of Stable Deep Neural Network Architectures using Synthetic Gradients in PyTorch
+
+This work is an extension of the Thesis component of MSc Computing Science which I studied at Imperial College London. 
+The original project focused on implementing stable deep neural network architectures and optimising 
+the training process's computational efficiency using the parallel variable distribution (PVD) algorithm.
+
+The focus has shifted to achieving parallelisation by utilising synthetic gradients that work as seen in the paper ***[Decoupled Neural Interfaces using Synthetic Gradients](http://arxiv.org/abs/1608.05343)***.
+In the training process for neural networks, the input data is first propgated in the forward direction, then the error is calculated and finally the error gradients are propagated backwards
+through the network and the weights are updated. However, the process is locked as layers (which can be grouped in "modules") must wait for both input features 
+to flow through earlier sections of the network and for the error gradient to propagate backwards through the layers ahead. This results in forward and backward locking.
+
+The synthetic gradients speed-up backpropagation by approximating the error between modules of layers and this unlocks the backward connection
+and allows for the distribution of training across multiple processors.
 
 For this project you will need Python 3 and the following libraries:
 Pytorch 0.4.1
@@ -12,58 +24,41 @@ numpy
 scipy
 os
 
-# Summary
-This project initially started as my MSc project at Imperial College London with Dr Panos Parpas as my supervisor and it has since
-been extended with further research. In the core component of the project, I implemented the Stable Deep Neural Network (DNN) Architectrues
-that are described in (Haber, Ruthotto et at., 2017) which can be found at [https://arxiv.org/abs/1705.03341]. The MSc project culminated with the
-an implementation of the Parallel Variable Distribution (PVD) (Solodov, 1997) located at [http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.158.2869&rank=4] 
-to parallelise the training of the stable DNNs across multiple processors and this resulted in a significant theoretical speed-up. 
-The extension is ongoing work and features the use of synthetic gradients (Jaderberg et al., 2016) which can be found at [https://arxiv.org/abs/1608.05343] 
-to parallelise the DNN training algorithm and achieve significant speed-ups while still achieving acceptable levels of performance. 
-The synthetic gradients have been incorporated in a distributed implementation using Python's multiprocessing library.   
-
-# Code Base
-
-Core Modules:
+Modules:
 ResNet.py
 Antisymmetric.py
 Leapfrog.py
 ellipse.py
+
+PVD.py - also has script - main() inside - run pvd on ellipse, swiss roll, or MNIST
 ellipse.py - also has script - main() inside - run ellipse example
 swiss.py- also has script - main() inside - run swiss roll example
 
-Core Scripts:
 
-The core scripts 
+##Scripts for synthetic gradients:
 
-verletTest.py - MNIST for verlet
-resTest.py - MNIST for resNet
-leapTest.py - MNIST for Leapfrog
-antiTest.py - MNIST for antisymmetric
+The scripts below build, train and test a DNN. The user is free to specify the 
+DNN architecture, hyperparameters and dataset within the script.
 
-PVD Scripts
-PVD.py - also has script - main() inside - run pvd on ellipse, swiss roll, or MNIST
+### Runs standard DNN with no synthetic gradients
+```
+fullmodel.py  
+```
+### Distributes training over multiple processes
+```
+distSg.py 
+```
+### Distributes training over multiple processes and also uses a multilevel learning scheme
 
-The files are generally quite well commented and easy to understand:
+```
+distMult.py  
+```
 
-ResNet.py
----------------------------------------------------------------------
-The core module is ResNet and it contains the ResNet class:
-This is the base neural network that the other three architectures 
-inherit from. The core functions are the forward propagation 
-(which also includes the classifier step) and its training algorithm.
-The only changes that need to be made to build a new deep neural network
-architecture dervived from it is with the forward propagation when inheriting
-from the class. 
+##The PVD code was not distributed across multiple processors but theoretical training times were calculated.
 
-The ResNet class is initialised with:
-            N - number of layers
-            num_features - number of inputs
-            num_classes - number of outpurs
-            func_f - activation function
-            weights - weight matrix if none then a random initlisation will be used
-            bias = - bias vector if none then a random initilisation with be used
-
+```
+PVD.py trains the DNN using the PVD algorithm. 
+```
 
 The function train() is used to train deep neural networks for a chosen 
 number of epochs of training. It applies the backpropagation algorithm

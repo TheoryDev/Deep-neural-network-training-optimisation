@@ -44,12 +44,12 @@ def main(argv):
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
     choice = "r" # "v"
-    gpu = False
-    conv = False
+    gpu = True
+    conv = True
     
-    batch_size = 1024
+    batch_size = 64 #1024
     #hyper parameters
-    N = 64
+    N = 4
     learn_rate = 0.5#0.05
     step = .15
     epochs = 10#20#0#50

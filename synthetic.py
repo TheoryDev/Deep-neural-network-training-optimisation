@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Nov 18 16:19:59 2018
-
-@author: koryz
-"""
 from __future__ import print_function
 import torch
 import torch.nn as nn
@@ -23,34 +17,18 @@ import time
 #own codebase
 import ResNet as res
    
-
- 
-"""nolonger used 
-def sgLoss(args, h, y, grad, loss=mse):
-    #sg = h*args[0] + y*args[1] + args[2]
-    x = sg(args, h, y)
-    return loss(x, grad)
-#def loss(h, y, func, args, loss=linear_SG):
-def sg(args, h, y):
-    print("h" , h)
-    print("args[0]", args[0].shape)
-    print("y", y)
-    print("args[1]", args[1].shape)
-    return h*args[0]  + y*args[1] + args[2]    
-"""
-
 class LinearRegressionSG(nn.Module):
     """
     Class used to build single layer neural network for SG module's gradient
     prediction. It uses the tanh activation function.
     """
     
-    def __init__(self, num_features, conv=False, in_channels=7, n_filters=6):
+    def __init__(self, num_features, conv=False, in_channels=1, n_filters=6):
         super(LinearRegressionSG, self).__init__()
-        
+        #replace 10 with num classes
         self.conv = conv
         if self.conv == True:
-            self.linear = nn.Conv2d(n_filters+1, n_filters, 3, padding=1, groups=1)    
+            self.linear = nn.Conv2d(n_filters+10, n_filters, 3, padding=1, groups=1)    
         else:
             self.linear = nn.Linear(num_features*in_channels+1, num_features*in_channels)
                 
@@ -63,21 +41,17 @@ class synthetic_module:
     """
     class to build synthetic gradient modules
     """    
-    def __init__(self, device, function=sgLoss, loss=mse, args=np.array([0.5,0.5,0.5]), gpu=True, num_features=2, conv=False, in_channels=16, n_filters=6):
+    def __init__(self, device, gpu=True, num_features=2, conv=False, in_channels=16, n_filters=6):
         """
         The initialisation takes a function and its arguments and and
         an optimiser and its arguments.
         num_features -  the number of input features
         function - activation function for neural network that approximates gradients
-        loss - loss function
-        args - no longer used (to be removed at a later date)
+        loss - loss function        
         gpu - boolean flag for gpu        
         """       
             
         self.__num_features = num_features
-        self.__function = function
-        self.__loss = loss
-        self.__args = args  
         #self.__lin = linear_model.LinearRegression(normalize=False)
         self.__device = device
         self.__gpu = gpu
@@ -88,7 +62,7 @@ class synthetic_module:
             self.__linSG.to(device)
         
     def init_optimiser(self, learn_rate=0.01):
-        self.__opt = optim.SGD(self.__linSG.parameters(), lr = learn_rate)
+        self.__opt = optim.Adam(self.__linSG.parameters(), lr = learn_rate)
         
     def zero_optimiser(self):
         self.__opt.zero_grad()
@@ -113,21 +87,20 @@ class synthetic_module:
         The optimiser function 
         """     
         if h is None:
-            h = self.__h_before       
-     
-        
-    
-    def calculate_sg(self, h, y,func=sg):
-       #reshape labels 
+            h = self.__h_before          
+           
+    def calculate_sg(self, h, y):
+       #get labels
        if self.__conv == True:
-           #for convolutional neural networks I am not using labels yet to conditional sg
-           tmp_y = y.reshape(y.shape[0],1,28,28)         
+           #get one hot labels (extra channels)
+           tmp_y = self.condition(h.shape, y.detach())                         
        else:
            tmp_y = y.reshape((len(y),1)).float()  
        
        tmp_h = h.detach()
        #cat inputs and labels
-       x =  torch.cat((tmp_h, tmp_y), dim=1)          
+       x =  torch.cat((tmp_h, tmp_y), dim=1)   
+       
        #get prediction
        pred = self.__linSG(x)        
          
@@ -175,7 +148,7 @@ class synthetic_module:
             grad = gradient
         #optimise gradient      
                
-        error_func = nn.MSELoss()#(pred ,grad)
+        error_func = nn.MSELoss()
         loss = error_func(self.syn_grad, grad)
         
         #regularisation - may add in future    
@@ -186,24 +159,26 @@ class synthetic_module:
         self.__opt.step()
        
         return loss.data.float()       
-
-    def first_optimise(self, num_features = 2, num_classes = 2, batch_size=10):
-        """
-        used for old sg- will remove at a later date
-        """
-        #randomly initialise sg modules
-               
-        h = np.random.normal(size=(batch_size, num_features))
-        y = np.random.normal(size=(batch_size, 1))
-        grad = np.random.normal(size=(batch_size, num_features))
-        self.__lin.fit(np.concatenate((h,y), axis=1), grad)
-        
           
-    
-    def convLabels(self, labels, y_shape = (28, 28), num_classes=10):
-        batch_size = labels.shape[0]
-        convLabels = torch.zeros(batch_size, 10, *y_shape)
-        for i in range(batch_size):
-            convLabels[i][labels[i]] += 1
+    def condition(self, inputs_shape, labels):
+        """
+        Takes input with the shape (N, C, H, W) and returns one hot labels mask channels
+        with the shape (N, N_classes, H, W) 
+        """
+        num_classes = 10
+        #replace 10 with num classes
+        one_hot_channels = torch.zeros((inputs_shape[0],) + (num_classes,) + inputs_shape[-2:])
+        one_hot = torch.zeros((inputs_shape[0], num_classes, 1,))
         
-        return convLabels     
+        if self.__gpu == True:
+            one_hot_channels.to(self.__device)
+            one_hot.to(self.__device)
+        
+        #rank = len(labels.shape)
+        #for each example set ith channel value to 1
+        one_hot.scatter_(dim=1, index=labels.unsqueeze(1).unsqueeze(1), value= 1)
+        #update values of channels to one hot labels
+        one_hot_channels += one_hot.unsqueeze(2)
+        #concatenate onto inputs        
+        return one_hot_channels
+    

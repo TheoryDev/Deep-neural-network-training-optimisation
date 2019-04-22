@@ -39,7 +39,13 @@ class Verlet(res.ResNet):
         i = 0
         #get first input form with n_channels
         if self.conv == True and self.first == True:
-            x = self.func_f(self.firstMask(x))             
+            #x = self.func_f(self.firstMask(x))  
+            if self.in_chns == 1:
+                    #for MNIST we have 1 channel so copy input channels x6
+                    x = torch.cat((x,x,x,x,x,x), dim=1)#self.func_f(self.firstMask(x))    
+            elif self.in_chns == 3:
+                # for CIFAR we have 3 channels so copy input channels x2
+                x = torch.cat((x,x), dim=1)
    
         #init z_minus 
         z_minus = torch.zeros(x.shape)

@@ -77,9 +77,9 @@ class complexNeuralNetwork:
     
             return model
     
-    def create_sg(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), gpu=False, num_features=2):
+    def create_sg(self, gpu=False, num_features=2):
         #creates sg module
-        return syn.synthetic_module(self.__device, function, loss, args, gpu, num_features, self.__conv, self.__in_chns, self.__n_filters)
+        return syn.synthetic_module(self.__device, gpu, num_features, self.__conv, self.__in_chns, self.__n_filters)
     
     def init_nets(self, N = 2, num_features = 2, num_classes = 2, func_f = torch.tanh, 
                   func_c =F.softmax, weights = None, bias = None, choice = None, gamma = 0.01, mutli = True):
@@ -106,11 +106,10 @@ class complexNeuralNetwork:
             for net in self.__nnets:
                 net.to(self.__device)
             
-    def init_sgs(self, function=syn.sgLoss, loss=nn.MSELoss, args=np.array([0.5,0.5,0.5]), 
-                 num_features=2, batch_size=2): 
+    def init_sgs(self, num_features=2, batch_size=2): 
         
         #store synthetic gradient module arguments                
-        self.__sgArgs = (function, loss, args, self.__gpu, num_features)
+        self.__sgArgs = (self.__gpu, num_features)
     
         #add sg modules           
         for i in range(self.__M - 1):
@@ -130,7 +129,7 @@ class complexNeuralNetwork:
             #get netowrk params - capability to freeze layers
             params = filter(lambda param: param.requires_grad == True, net.parameters())
             #create optimiser for sub-network
-            self.__optimisers.append(optim.SGD(params, lr = learn_rate))
+            self.__optimisers.append(optim.Adam(params, lr = learn_rate))
         
         for s in self.__sgmodules:
             s.init_optimiser(learn_rate)
@@ -274,12 +273,12 @@ class complexNeuralNetwork:
                 #calculate loss
                 torch.cuda.synchronize()
                 tmp_loss_t = time.perf_counter()
-                if self.__conv == True:
-                    labels_y = labels[:,0,:0]*self.__nnets[0].num_classes
+                #if self.__conv == True:
+                 #   labels_y = labels[:,0,:0]*self.__nnets[0].num_classes
                     
-                    loss = error_func(out, labels_y.round().long())
-                else:
-                    loss = error_func(out, labels)  
+                  #  loss = error_func(out, labels_y.round().long())
+                #else:
+                loss = error_func(out, labels)  
                 torch.cuda.synchronize()
                 t_loss += time.perf_counter() - tmp_loss_t
                 
@@ -391,14 +390,16 @@ class complexNeuralNetwork:
             if self.__conv == False:
                 #convert to vector
                 inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)
-            else:
-                labels =  (labels[:,0,:0]*self.__nnets[0].num_classes).round().long()
+            #else:
+             #   labels =  (labels[:,0,:0]*self.__nnets[0].num_classes).round().long()
             #propagate through network                                 
             outputs = self.propagate(inputs, step = f_step, train=False)
             
             #get predictions- by getting the indices corresponding to max arguments
             pred = torch.max(outputs, 1)[1]
           
+            #print("pred:", pred)
+            
             #get number of correctly classified examples in the batch
             correct = (pred == labels).sum().item()
 
@@ -494,7 +495,7 @@ class complexNeuralNetwork:
                 epoch_loss += loss           
                 i += 1               
        
-            print("epoch", epoch+1, "loss", epoch_loss/i)
+            print("epoch", epoch+1, "loss", epoch_loss/(i*trainloader.batch_size))
             
             if graph == True:
                 #make more sophisticated

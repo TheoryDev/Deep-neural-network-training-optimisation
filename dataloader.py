@@ -31,15 +31,15 @@ class InMemDataLoader:
         """
         This loads the dataset and creates the train loader and test loaders
         """
-        batch_size = 100
+        batch_size = 256
         
-        if self.conv_sg == True:
-            batch_size = 1        
+        #if self.conv_sg == True:
+        #    batch_size = 1        
         
         download = True
         root = self.root + self.dataset
         if self.dataset == "MNIST": 
-            transform = transforms.Compose([transforms.ToTensor()])
+            transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
             trainset = torchvision.datasets.MNIST(root, train=True, download=download, transform=transform)
             testset = torchvision.datasets.MNIST(root, train=False, download=download, transform=transform)
         
@@ -76,9 +76,9 @@ class InMemDataLoader:
         for i, data in enumerate(trainloader, 0):
             inputs, labels = data
             
-            if self.conv_sg == True:
-                tmp = torch.zeros(inputs.shape).float()
-                labels = tmp + labels[0].float()/num_classes
+            #if self.conv_sg == True:
+                #tmp = torch.zeros(inputs.shape).float()
+                #labels = tmp + labels[0].float()/num_classes
             
             #print(i)
             if i == 0:               
@@ -95,9 +95,9 @@ class InMemDataLoader:
         for i, data in enumerate(testloader, 0):
             inputs, labels = data
             
-            if self.conv_sg == True:
-                tmp = torch.zeros(inputs.shape).float()
-                labels = tmp + labels[0].float()/num_classes
+           # if self.conv_sg == True:
+             #   tmp = torch.zeros(inputs.shape).float()
+            #    labels = tmp + labels[0].float()/num_classes
             
            # print(i)
             if i == 0:                

@@ -23,14 +23,15 @@ def main():
     myMemLoader.storeAsHDF5()
     print("CIFAR100 stored in HDF5")
     
-    """
-    THE CODE BELOW WILL BE USED LATER FOR CNNs
     
+    #THE CODE BELOW WILL BE USED LATER FOR CNNs
+    """
     #store MNIST in HDF5
-    #myMemLoader = dl.InMemDataLoader(dataset= "MNIST", conv_sg=True)
-    #myMemLoader.storeAsHDF5()
-    #print("MNIST stored in HDF5")   
-       
+    myMemLoader = dl.InMemDataLoader(dataset= "MNIST", conv_sg=True)
+    myMemLoader.storeAsHDF5()
+    print("MNIST stored in HDF5")   
+    
+    
     #store CIFAR 10
     myMemLoader = dl.InMemDataLoader(dataset= "CIFAR10", conv_sg=True)
     myMemLoader.storeAsHDF5()

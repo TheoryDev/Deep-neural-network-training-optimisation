@@ -74,9 +74,6 @@ def main(argv):
     
     multilevel = False       
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss    
        
     if len(argv) > 0:
         
@@ -109,9 +106,6 @@ def main(argv):
     
     multilevel = True     
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss   
     
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
@@ -121,7 +115,7 @@ def main(argv):
                          choice, gamma, multilevel)
         
     #init SG modules
-    complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)  
+    complexNet.init_sgs(num_features=num_features, batch_size=batch_size)  
       
     #train coarse model 
     torch.cuda.synchronize()

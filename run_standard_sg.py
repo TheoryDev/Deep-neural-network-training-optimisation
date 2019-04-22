@@ -35,7 +35,7 @@ def main():
     
     
     #complex net parameters
-    M = 2
+    M = 4
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     #---------------training data--------------------
@@ -48,8 +48,8 @@ def main():
               
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
-    conv= False
-    gpu = True
+    conv= True
+    gpu = False
     
      #neural net parameters---------------------------------------------------------
     
@@ -63,9 +63,9 @@ def main():
     
     #-----------hyper parameters
     batch_size = 256
-    N = 64#-note  model will be 2* this 
-    learn_rate = 0.05
-    f_step = 0.25
+    N = 1#2#64#-note  model will be 2* this 
+    learn_rate = 0.025
+    f_step = .025
     epochs = 10#10#00   
       
     gamma = 0.02    
@@ -85,9 +85,7 @@ def main():
     
     multilevel = False       
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss
+       
        
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
@@ -97,7 +95,7 @@ def main():
                          choice, gamma, multilevel)
         
     #init SG modules
-    complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)  
+    complexNet.init_sgs(num_features=num_features, batch_size=batch_size)  
   
     #train_network
     torch.cuda.synchronize()
@@ -112,7 +110,7 @@ def main():
     
     result_train = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
-    loader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = False)
+    loader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = False, train = False)
     
     result_test = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     

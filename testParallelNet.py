@@ -35,8 +35,8 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     
-    gpu = False
-    conv = False
+    gpu = True
+    conv = True
     dataset_name = "MNIST"
     choice = 'r'
     
@@ -53,11 +53,11 @@ def main():
     batch_size = 256
     #-note coarse model will be 2* this, fine model with be 4* this    
     N = 1
-    learn_rate_c = .5
-    f_step_c = .4
+    learn_rate_c = .25
+    f_step_c = .75
     learn_rate_f = .25
-    f_step_f = .15
-    epochs = 2#10#0
+    f_step_f = .25
+    epochs = 5#10#0
       
     # 0.00005
     alpha_f = 0.001
@@ -65,7 +65,7 @@ def main():
     gamma = 0.05
    
     begin = 0
-    end = 10#000  
+    end = 10000  
            
     # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     
@@ -80,9 +80,7 @@ def main():
     func_c = F.softmax    
     error_func = nn.CrossEntropyLoss()
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss
+    
     #initial optimisation parameters for sg modules
     #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
     
@@ -93,7 +91,7 @@ def main():
                          ,choice, gamma, multilevel)
         
     #init SG modules
-    complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)    
+    complexNet.init_sgs(num_features=num_features, batch_size=batch_size)    
         
     #train coarse model
     torch.cuda.synchronize()

@@ -18,6 +18,7 @@ import leapfrog as lp
 import Verlet as ver
 import ellipse as el
 import swiss as sr
+import dataloader as dl
 
 class PVD:
     """
@@ -120,7 +121,7 @@ class PVD:
         outputs = model(inputs, f_step, plot)
         loss = error_func(outputs, labels)
 
-        print("loss is:" ,loss)
+        #print("loss is:" ,loss)
 
         loss.backward()
 
@@ -151,7 +152,7 @@ class PVD:
             #calculate list of directions
             direction_block = self.gen_directions(self.direction_model, trainloader, error_func, f_step, plot = graph)
        
-            print("i------------------------------------", i+1)
+            print("---------------------------iteration---------------------------------", i+1)
            
             #train each model in loop using error as objective function           
             #train each model and calculate errors
@@ -165,18 +166,17 @@ class PVD:
                 results.append(r)
 
             #synchronisation---------------------------------------------------
-
-            synch_time = time.time()
+            torch.cuda.synchronize()
+            synch_time = time.perf_counter()
 
             #get minimum error
             errors = np.array([r[0] for r in results])
             min_index = errors.argmin()
 
-
             #now get directions
             direction, mu = results[min_index][1], results[min_index][2]
             
-            print("min", min_index)
+            print("processor (", min_index, ") was the fastest in this epoch")
             #multiply direction blocks by mu
             mu_direction = res.ResNet.mult_mu(direction, mu, steps)
 
@@ -193,16 +193,18 @@ class PVD:
             
             acc = acc[2]
             if acc >= base_acc:
-                synch_time = time.time() - synch_time 
+                torch.cuda.synchronize()
+                synch_time = time.perf_counter() - synch_time 
                 timer += synch_time + p_time
-                print(synch_time, p_time)
-                print ("PVD finished", acc)
+                print("---------------------PVD finished with accuracy:", acc, "-------------------")
+                print("synch time:", synch_time, "time in process:", p_time)               
                 return timer
           
             #synchronise the modesl
             self.copy_model(min_index)
-            synch_time = time.time() - synch_time
-            print(synch_time, p_time) 
+            torch.cuda.synchronize()
+            synch_time = time.perf_counter() - synch_time
+            #print(synch_time, p_time) 
             timer += synch_time + p_time
             
         return timer
@@ -211,7 +213,8 @@ class PVD:
                             ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph):
      
         #get time of process
-        run_time = time.time()
+        torch.cuda.synchronize()
+        run_time = time.perf_counter()
         #gets block of directions and set as instance of model
    
         directions = self.d_block(direction_block, model)
@@ -225,14 +228,15 @@ class PVD:
         model.directions = copy.deepcopy(directions)
 
         #train model by optimising weights and also mu
-        t = time.time()
+        #t = time.perf_counter()
         error = model.train(trainloader, error_func, learn_rate, epochs, begin, end
                                 ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, mu, steps)
-        print("t: ",time.time()-t)
-        run_time = time.time() - run_time
+       # print("t: ",time.perf_counter()-t)
+        torch.cuda.synchronize()
+        run_time = time.perf_counter() - run_time
       
-        print("mu", mu)
-        print("run time of processor is ", run_time)
+        #print("mu", mu)
+       # print("run time of processor is ", run_time)
         return [error, directions, mu, run_time]
 
 
@@ -255,7 +259,7 @@ class PVD:
                 in_block = True
                 break
         #useful to know which processor is currently being trained
-        print("start", start, "end", end)
+        #print("start", start, "end", end)
         
         d = directions[:start] + directions[end:]
         return d
@@ -309,28 +313,34 @@ def main():
     # Assume that we are on a CUDA machine, then this should print a CUDA device:
     print(device)
 
+    #set the flag for the database you want equal to trye
+    conv = False #
+    dataset_name = "ELLIPSE" #choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    gpu=False
+
+    #architecture choices
     num_proc =  2
     N = 4
     num_features = 2
     num_classes = 2
-
+    batch_size = 8
+    
+    learn_rate = 0.1
+    iterations = 10#00 # max number of iterations of PVD algorithm
+    epochs = 100# epochs that each process will train for in each iteration of the PVD
+       
     func_f = torch.tanh
     func_c =F.softmax
     weights = None
     bias = None
     error_func=nn.CrossEntropyLoss()
-
-
-    gpu=False
-    choice = 'r'
-    gamma = 0.1
-
-    learn_rate = 0.05
-    epochs = 100
+    
+    choice = 'v'
+    gamma = 0.1   
+    
     begin = 0
     end = 100
-    f_step =0.1
-
+    f_step =0.5
 
     reg_f=False
     alpha_f=0.01
@@ -338,70 +348,32 @@ def main():
     alpha_c = 0.01
     graph=False
     acc = 85
-
-    iterations = 1000
-
-    #set up dataset-ellipse problem
-    a = np.array([[0,0.1],[0.1,0.2]])
-    a = a*10
-    b = a*0.5
-
-    
-    
-    E = False
-    S = False
-    MNIST = True
-
-    if E:
-        myE = el.ellipse(device, 500, 100, a, b)
-        dataset = myE.create_dataset(myE.examples)
-        trainloader = torch.utils.data.DataLoader(dataset, batch_size = 10, shuffle = True)
-        datasetT = myE.create_dataset(myE.valid)
-        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)
-
-    if S:
-        num_features = 4
-        myS = sr.SwissRoll(device, 500, 0.2)
-        dataset = myS.create_dataset(myS.examples)
-        trainloader = torch.utils.data.DataLoader(dataset, batch_size = 10, shuffle = True)
-        datasetT = myS.create_dataset(myS.valid)
-        testloader = torch.utils.data.DataLoader(datasetT, batch_size = 10)  
-
-    
-    if MNIST:
-        num_features = 784
-        num_classes = 10
-        batch_size = 250
-        begin = 0
-        end = 100
-        gpu = True
+      
+    dataloader = dl.InMemDataLoader(dataset_name, conv_sg=False) # only uses FCN layers
         
-        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-                        #transforms.Normalize((0.5,0.5,0.5),(0.5,0.5,0.5))])
+    num_features, num_classes, in_channels = dl.getDims(dataset_name)
     
-        trainset = torchvision.datasets.MNIST(root='./data', train=True,
-                                                download=True, transform=transform)
-        trainloader = torch.utils.data.DataLoader(trainset, batch_size = batch_size,
-                                                  shuffle=False, num_workers=8, pin_memory = True)
+    #load training dataset                         
+    trainloader = dataloader.getDataLoader(batch_size, shuffle = True, num_workers = 0, pin_memory = True, train = True)     
+    testloader = dataloader.getDataLoader(batch_size, shuffle = False, num_workers = 0, pin_memory = False, train = False)
     
-        testset = torchvision.datasets.MNIST(root='./data', train=False,
-                                               download=True, transform=transform)
-        testloader = torch.utils.data.DataLoader(testset, batch_size= batch_size,
-                                                 shuffle=False, num_workers=8, pin_memory = True)
-
     pvd = PVD(device, num_proc)
     pvd.set_models(N, num_features, num_classes, func_f, func_c, weights, bias, gpu, choice, gamma)
 
-    start_time = time.time()  
-
+    torch.cuda.synchronize()
+    start_time = time.perf_counter()  
+    
     timer =  pvd.pvd_algo(iterations, trainloader, testloader, error_func, learn_rate, epochs, begin, end
                             ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, acc)
 
-    print("new_time", timer)
-    print("time_old: ", (time.time()-start_time)/num_proc)
+    torch.cuda.synchronize()
+    print("total time:", time.perf_counter()-start_time)
+    print("theoretical distributed time:", timer)
+    torch.cuda.synchronize()
+    #print("time_old: ", (time.time()-start_time)/num_proc)
     result = pvd.models[0].test(testloader, begin, end, f_step)
-    print("result :", result)
-    print("iterations", iterations, "num processors", num_proc, "num layers", N, "epochs", epochs, "acc", acc)
+    print("test accuracy result:", result)
+    #print("iterations", iterations, "num processors", num_proc, "num layers", N, "epochs", epochs, "acc", acc)
  
 
 if __name__ == '__main__':

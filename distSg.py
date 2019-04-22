@@ -36,15 +36,15 @@ import sys, getopt
 def main(argv):
     
     #complex net parameters
-    M = 2        
+    M = 4       
     #---------------training data--------------------
               
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
-    conv= False
+    conv= True
     gpu = False
     
-     #neural net parameters---------------------------------------------------------
+    #neural net parameters---------------------------------------------------------
     
     weights = None
     bias = None  
@@ -55,9 +55,9 @@ def main(argv):
     graph = True
     
     #-----------hyper parameters
-    batch_size = 1024
-    N = 32#128#56#-note  model will be 2* this 
-    learn_rate = 0.25
+    batch_size = 256
+    N = 1#32#128#56#-note  model will be 2* this 
+    learn_rate = 0.025
     f_step = .025
     epochs = 10#10#000  
       
@@ -72,9 +72,6 @@ def main(argv):
             
     multilevel = False       
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss       
     
     if len(argv) > 0:
         #print(argv)
@@ -102,10 +99,7 @@ def main(argv):
     
     multilevel = False       
     #------------------------------------------------------------------------------
-    #-------------------sg parameters--------------------------
-    sg_func = syn.sgLoss
-    sg_loss = nn.MSELoss
-       
+          
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     
@@ -114,7 +108,7 @@ def main(argv):
                          choice, gamma, multilevel)
         
     #init SG modules
-    complexNet.init_sgs(sg_func, sg_loss, num_features=num_features, batch_size=batch_size)  
+    complexNet.init_sgs(num_features=num_features, batch_size=batch_size)  
       
     #accBefore = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     

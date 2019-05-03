@@ -356,7 +356,7 @@ class complexNeuralNetwork:
             print("mult", multi)
             #store the last batch labels to use for linear fit
             for module in self.__sgmodules:
-                module.store_labels(labels)               
+                module.store_labels(labels)              
   
         #new time measurements
         master_t = time.perf_counter() - master_t
@@ -364,6 +364,8 @@ class complexNeuralNetwork:
         theoretical_time =  m_non_back+ master_para_t
         adjust_speed_up = (master_t-m_load)/(theoretical_time-m_load)
         
+        """
+        FOR TESTING PURPOSES
         print("\nblock back_time",  m_loop_back, "\nback_time", master_back_t, "\npara_time", master_para_t)
         print("\nbatch load time", m_load)
         print("\nin_net time", t_net)
@@ -374,14 +376,15 @@ class complexNeuralNetwork:
         print("t_first", t_first)
         print("t_opt", t_opt)
         print("loss_t", t_loss)       
-        
+        """
         return master_t, theoretical_time, master_t/theoretical_time, adjust_speed_up
         #test training accuracy of full network     
        
     def test(self, testloader, begin = 0, end = 100, f_step =0.1):
         #counters for number of positive examples and total
         num_positive = 0.
-        num_total = 0.
+        num_total = 0.     
+                
         #iterate through training set
         for inputs, labels in itertools.islice(testloader, begin, end):
 
@@ -390,15 +393,12 @@ class complexNeuralNetwork:
             if self.__conv == False:
                 #convert to vector
                 inputs = inputs.view(-1, self.__nnets[0].num_features*self.__nnets[0].in_chns)
-            #else:
-             #   labels =  (labels[:,0,:0]*self.__nnets[0].num_classes).round().long()
+           
             #propagate through network                                 
             outputs = self.propagate(inputs, step = f_step, train=False)
             
             #get predictions- by getting the indices corresponding to max arguments
-            pred = torch.max(outputs, 1)[1]
-          
-            #print("pred:", pred)
+            pred = torch.max(outputs, 1)[1]         
             
             #get number of correctly classified examples in the batch
             correct = (pred == labels).sum().item()
@@ -406,7 +406,6 @@ class complexNeuralNetwork:
             #add to the counters
             num_total += labels.size(0)
             num_positive += correct
-
 
         #return total , number positive, classificaiton rate
         return [num_total, num_positive, 100*(num_positive/num_total)]
@@ -425,16 +424,20 @@ class complexNeuralNetwork:
         """
         #train coarse network
         self.train(trainloader, error_func, learn_rate, epochs, 
-                          begin, end, f_step, reg_f, alpha_f, reg_c, alpha_c, graph = graph, multi=True)        
+                          begin, end, f_step, reg_f, alpha_f, reg_c, alpha_c, graph = graph, multi=True)       
         
+        #To do double the networks in here and then use the last labels to condition the sg
                 
     def double_complex_net(self):                
         #double the number of layers in each net
         for net in self.__nnets:
             net.double_layers()
-            if self.__gpu == True:
-                net.to(self.__device)       
+            if self.__gpu == True:                
+                net.to(self.__device)     
+                
   
+    def getFirstNetParams(self):
+        return [x for x in self.__nnets[0].parameters()]
     
     def distTrain(self, trainloader, error_func, learn_rate, epochs, begin, end
                                 ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, multi=False, num_procs=2):
@@ -450,25 +453,39 @@ class complexNeuralNetwork:
         losses = []
         rounds = []
         #create optimisers
-        self.init_optimisers(learn_rate)        
+        if self.__gpu == True:
+            #send model to cpu to send to child processes
+            device = torch.device("cpu")
+            #print(self.__nnets)
+            for net in self.__nnets:                
+                net.to(device)    
+                net.props = None
         
+            for sg in self.__sgmodules:
+                sg.set_device(device)                          
+        
+        self.init_optimisers(learn_rate)        
+       
+        #pipes for synchronisation
+        pPipe, cPipe = mp.Pipe()
+        print("before start")        
         for i in range(num_procs+1):
             pipes.append(mp.Pipe())
         #first process
         p = mp.Process(target=proc_run, args=(0, pipes[0][1], pipes[1][0], 
-                                              self.__nnets[0], self.__optimisers[0], f_step, self.__sgmodules[0]))
+                                              self.__nnets[0], self.__optimisers[0], f_step, self.__sgmodules[0], None, cPipe))
         p.start()
         processes.append(p)
         
         #N-2 middle processes
         for i in range(1, num_procs-1):
             p = mp.Process(target=proc_run, args=(i, pipes[i][1], pipes[i+1][0], 
-                                                  self.__nnets[i], self.__optimisers[i], f_step, self.__sgmodules[i]))
+                                                  self.__nnets[i], self.__optimisers[i], f_step, self.__sgmodules[i], None, cPipe))
             p.start()
             processes.append(p)
         #last process
         p = mp.Process(target=proc_run, args=(-1, pipes[-2][1], pipes[-1][0], self.__nnets[-1], 
-                                              self.__optimisers[-1], f_step, None, error_func))
+                                              self.__optimisers[-1], f_step, None, error_func, cPipe))
         p.start()
         processes.append(p)
         print("start")
@@ -505,14 +522,38 @@ class complexNeuralNetwork:
         torch.cuda.synchronize()
         t = time.perf_counter() - t    
         #send kill signal
-        pipes[0][0].send(None)
+        pipes[0][0].send(None)        
 
+        #if using gpu synch parameters with child process
+        if self.__gpu == True:
+            #iterate through processes
+            #collect parameters
+            
+            params = []
+            for i in range(self.__M):
+                p = pPipe.recv()
+                params.append(p)
+                                  
         for p in processes:
             p.join()
-            
-        print("ended")        
-         
-          
+                    
+        if self.__gpu == True:
+            #iterate through processes
+            device = torch.device("cuda:0")
+            for i in range(self.__M-1):                
+                net_params, sg_params = params[i]
+                self.__nnets[i].set_net_params(net_params)
+                self.__nnets[i].to(device)                
+                self.__sgmodules[i].set_params(sg_params)
+                self.__sgmodules[i].set_device(device)
+            #get last net       
+            cWeights, cBias = params[-1]
+            self.__nnets[-1].set_net_params(cWeights)
+            self.__nnets[-1].set_classifier_params(cBias)
+            self.__nnets[-1].to(device)
+        
+        print("ended")       
+             
         if graph == True:
             plt.plot(rounds, losses, '-')
             plt.grid()
@@ -526,13 +567,25 @@ To do - add saving networks
       - add regularisation
 """
 
-def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=None):
+def proc_run(name, pipeA, pipeB, model, opt, step, sg_module, error_func, parentPipe):
     #receive data     
-    data = pipeA.recv()      
+    data = pipeA.recv()   
+        
+    if model.gpu == True:
+        device = torch.device("cuda:0")
+        if name == -1:
+            device = torch.device("cuda:0")            
+        else:
+            device = torch.device("cuda:"+str(name+1))
+            sg_module.set_device(device)
+        model.to(device)
    
-    while data != None:        
-     
+    while data != None:                   
+        
         inputs, labels = data
+        
+        if model.gpu == True:
+            inputs, labels = inputs.to(device), labels.to(device)
         
         if name != 0:
             inputs.requires_grad = True
@@ -548,10 +601,10 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
         #propagate through sg module and pass output to next net
         if name == -1:
             loss = error_func(output, labels)
-            pipeB.send(loss)
+            pipeB.send(loss.detach().cpu())
         else:
             output = sg_module.propagate(output, para=True)        
-            pipeB.send([output, labels])            
+            pipeB.send([output.detach().cpu(), labels.detach().cpu()])            
       
         #use backward pass
         if name == -1:            
@@ -565,22 +618,34 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module=None, error_func=No
                
         #send synthetic gradient back first if not first neural net
         if name != 0:    
-            pipeA.send(inputs.grad)
+            pipeA.send(inputs.grad.detach().cpu())
             
         #if last subnet wait for next batch 
         if name != -1:         
             #get gradient and update sg module
             grad = pipeB.recv()
             #get error
+            if model.gpu == True:
+                grad = grad.to(device)
+            
             sg_error = sg_module.optimise(labels, multi=False, para=True, gradient=grad)            
     
         #get next batch
-        data = pipeA.recv()
+        data = pipeA.recv()   
+    
+    if model.gpu == True:
+        #send parameters to the parent process
+        device = torch.device("cpu")
+        model.to(device)
+        if name == -1:            
+            parentPipe.send(model.get_net_params())
+        else:
+            sg_module.set_device(device)
+            parentPipe.send([model.get_net_params(), sg_module.get_params()])     
     
     #send terminating none signal to next sub neural network
-    pipeB.send(None)   
-       
-            
+    pipeB.send(None)  
+              
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") 
        

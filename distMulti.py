@@ -33,6 +33,13 @@ import Verlet as ver
 import dataloader as dl
 import sys, getopt
 
+  
+np.random.seed(11)
+torch.manual_seed(11)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
+
 def main(argv):   
     
     #complex net parameters
@@ -40,9 +47,9 @@ def main(argv):
     
     #---------------training data--------------------          
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-    choice = 'v'
-    conv= False
-    gpu = False
+    choice = 'r'
+    conv= True
+    gpu = True
     
      #neural net parameters---------------------------------------------------------
     
@@ -52,15 +59,15 @@ def main(argv):
     reg_c = False   
     alpha_f = 0.001
     alpha_c = 0.00025
-    graph = True
+    graph = False
     
     #-----------hyper parameters
-    batch_size = 1024
-    N = 16 #-note coarse model will be 2* this, fine model with be 4* this  
+    batch_size = 256
+    N = 1 #-note coarse model will be 2* this, fine model with be 4* this  
     learn_rate_c = .25
-    f_step_c = .1
+    f_step_c = .75
     learn_rate_f = .25
-    f_step_f = .025 #coarse Verlet 64 could use .075
+    f_step_f = .25 #coarse Verlet 64 could use .075
     epochs = 5#0#000  
       
     gamma = 0.02    
@@ -86,14 +93,7 @@ def main(argv):
         choice = argv[6]
         graph = argv[7]
         print("N", N, "epochs", epochs, "lr_c", learn_rate_c, "step_c", f_step_c,
-              "lr_f", learn_rate_f,  "step_f", f_step_f, "choice", choice, "graph", graph)
-    
-  
-    np.random.seed(11)
-    torch.manual_seed(11)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-        
+              "lr_f", learn_rate_f,  "step_f", f_step_f, "choice", choice, "graph", graph)      
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
@@ -128,6 +128,7 @@ def main(argv):
     print("after coarse train")
     coarse_result = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step_c)
     #print("after coarse test")
+    
     complexNet.double_complex_net()    
     
     #train model with distributed algorithm

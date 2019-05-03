@@ -33,16 +33,24 @@ import Verlet as ver
 import dataloader as dl
 import sys, getopt
 
-def main(argv):
+np.random.seed(11)
+torch.manual_seed(11)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False  
+
+
+def main(argv):  
     
     #complex net parameters
-    M = 4       
+    M = 2  
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")     
     #---------------training data--------------------
-              
+      
+         
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
     conv= True
-    gpu = False
+    gpu = True
     
     #neural net parameters---------------------------------------------------------
     
@@ -52,11 +60,11 @@ def main(argv):
     reg_c = False   
     alpha_f = 0.001
     alpha_c = 0.00025
-    graph = True
+    graph = False
     
     #-----------hyper parameters
     batch_size = 256
-    N = 1#32#128#56#-note  model will be 2* this 
+    N = 2#32#128#56#-note  model will be 2* this 
     learn_rate = 0.025
     f_step = .025
     epochs = 10#10#000  
@@ -81,15 +89,9 @@ def main(argv):
         step = float(argv[3])        
         choice = argv[4]
         graph = argv[5]
-        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice, "graph", graph)
-         
-    np.random.seed(11)
-    torch.manual_seed(11)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False        
-    
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    
+        print("N", N, "epochs", epochs, "lr", learn_rate, "step", step, "choice", choice, "graph", graph)      
+          
+      
     dataloader = dl.InMemDataLoader(dataset_name, conv_sg=conv)
         
     num_features, num_classes, in_channels = dl.getDims(dataset_name)
@@ -116,6 +118,9 @@ def main(argv):
     train_time = complexNet.distTrain(loader, error_func, learn_rate, epochs, begin, end
                     ,f_step, reg_f, alpha_f, reg_c, alpha_c, graph, False, M)   
     
+    print("survived training")
+    
+   # print("-------------------------------------out of function---------------------------:", complexNet.getFirstNetParams())
     
     result_train = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step)
     
@@ -128,6 +133,6 @@ def main(argv):
     print("fine test result", result_test, "\n")
           
     print("train time", train_time)  
-   
+    #print("-------------------------------------out of function2---------------------------:", complexNet.getFirstNetParams())
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -65,6 +65,8 @@ def main(argv):
     
     error_func=nn.CrossEntropyLoss()    
     func_f = torch.tanh
+
+
     func_c = F.softmax
     #load trainset
     

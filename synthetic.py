@@ -28,14 +28,22 @@ class LinearRegressionSG(nn.Module):
         #replace 10 with num classes
         self.conv = conv
         if self.conv == True:
-            self.linear = nn.Conv2d(n_filters+10, n_filters, 3, padding=1, groups=1)    
+            self.layer = nn.Conv2d(n_filters+10, n_filters, 3, padding=1, groups=1)    
         else:
-            self.linear = nn.Linear(num_features*in_channels+1, num_features*in_channels)
-                
+            self.layer = nn.Linear(num_features*in_channels+1, num_features*in_channels)
+               
         
     def forward(self, x):
-        x = self.linear(x)
+        x = self.layer(x)
         return torch.tanh(x) 
+    
+    def set_params(self, params):
+        weight, bias = params
+        self.layer.weight.data = weight.data            
+        self.layer.bias.data = bias.data       
+        
+    def get_params(self):
+        return self.layer.weight.detach().cpu().clone(), self.layer.bias.detach().cpu().clone()
     
 class synthetic_module:
     """
@@ -48,7 +56,7 @@ class synthetic_module:
         num_features -  the number of input features
         function - activation function for neural network that approximates gradients
         loss - loss function        
-        gpu - boolean flag for gpu        
+        gpu - boolean flag for gpu       
         """       
             
         self.__num_features = num_features
@@ -60,7 +68,26 @@ class synthetic_module:
         self.__conv = conv
         if self.__gpu == True:
             self.__linSG.to(device)
-        
+        self.__h_before = None
+        self.__h_after = None
+        self.__labels = None
+    
+    def set_device(self, device):
+        self.__device = device
+        self.__linSG.to(device)
+        if self.__h_before is not None:
+            self.__h_before = self.__h_before.to(device)
+        if self.__h_after is not None:
+            self.__h_after = self.__h_after.to(device)
+        if self.__labels is not None:
+            self.__labels = self.__labels.to(device)
+    
+    def get_params(self):
+        return self.__linSG.get_params()
+    
+    def set_params(self, params):
+        self.__linSG.set_params(params)
+    
     def init_optimiser(self, learn_rate=0.01):
         self.__opt = optim.Adam(self.__linSG.parameters(), lr = learn_rate)
         
@@ -171,8 +198,8 @@ class synthetic_module:
         one_hot = torch.zeros((inputs_shape[0], num_classes, 1,))
         
         if self.__gpu == True:
-            one_hot_channels.to(self.__device)
-            one_hot.to(self.__device)
+            one_hot_channels = one_hot_channels.to(self.__device)
+            one_hot = one_hot.to(self.__device)
         
         #rank = len(labels.shape)
         #for each example set ith channel value to 1

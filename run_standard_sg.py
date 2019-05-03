@@ -35,7 +35,7 @@ def main():
     
     
     #complex net parameters
-    M = 4
+    M = 2
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     #---------------training data--------------------
@@ -49,7 +49,7 @@ def main():
     dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     choice = 'r'
     conv= True
-    gpu = False
+    gpu = True
     
      #neural net parameters---------------------------------------------------------
     
@@ -63,7 +63,7 @@ def main():
     
     #-----------hyper parameters
     batch_size = 256
-    N = 1#2#64#-note  model will be 2* this 
+    N = 2#2#64#-note  model will be 2* this 
     learn_rate = 0.025
     f_step = .025
     epochs = 10#10#00   
@@ -85,7 +85,6 @@ def main():
     
     multilevel = False       
     #------------------------------------------------------------------------------
-       
        
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
@@ -118,8 +117,8 @@ def main():
     print("fine test result", result_test, "\n")
     
     #theoretical time is the training time using the lowest on each batch of training
-    print("Total time:", train_time[0], "\ntheoretical time:", train_time[1])#, "\nspeed up:", train_time[2])  
-    #print("Batch time adjusted speed up", train_time[3])
-    
+    print("Total time:", train_time[0], "\ntheoretical time:", train_time[1])
+    print("Batch load time adjusted speed up", train_time[3])
+   
 if __name__ == '__main__':
     main()

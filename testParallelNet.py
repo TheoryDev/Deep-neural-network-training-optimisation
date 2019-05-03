@@ -132,10 +132,10 @@ def main():
     print ("fine train result", result_train, "\n")
     print("fine test result", result_test, "\n")
         
-    print("Total time:", train_time[0], "\ntheoretical time:", train_time[1], "\nspeed up:", train_time[2])  
-    print("Batch time adjusted speed up", train_time[3])
+    print("Total time:", train_time[0], "\ntheoretical time:", train_time[1]) 
+    print("Batch load time adjusted speed up", train_time[3])
     
-    print ("\n--------------------- Total time: ", coarse_time + train_time[1],"--------------------------")  
+    print ("\n--------------------- Total theoretical time: ", coarse_time + train_time[1],"--------------------------")  
     
 if __name__ == '__main__':
     main()

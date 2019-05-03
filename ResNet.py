@@ -84,7 +84,7 @@ class ResNet(nn.Module):
             if self.conv and self.first:
                 if self.in_chns == 1:
                     #for MNIST we have 1 channel so copy input channels x6
-                    x = torch.cat((x,x,x,x,x,x), dim=1)#self.func_f(self.firstMask(x))    
+                    x = torch.cat((x,x,x,x,x,x), dim=1)   
                 elif self.in_chns == 3:
                     # for CIFAR we have 3 channels so copy input channels x2
                     x = torch.cat((x,x), dim=1)
@@ -440,7 +440,7 @@ class ResNet(nn.Module):
 
             for i in np.arange(0, end, 2):
                 #case for convolutional neural networks
-                if self.conv ==  True:
+                if self.conv == True:
                     layers.insert(i, nn.Conv2d(self.n_filters,self.n_filters,3, padding=1))
                 else:            
                     layers.insert(i, nn.Linear(self.num_features, self.num_features))
@@ -451,8 +451,30 @@ class ResNet(nn.Module):
             for i in np.arange(2, end, 2):
                 layers[i].weight.data = 0.5*(layers[i+1].weight.data+layers[i-1].weight.data)
                 layers[i].bias.data = 0.5*(layers[i+1].bias.data+layers[i-1].bias.data)
+                
 
-
+        def set_net_params(self, parameters):
+            #The parameters returns the weights then parameters for each layer
+            for i, p in enumerate(parameters):
+                weight, bias = p
+                self.layers[i].weight.data = weight.data            
+                self.layers[i].bias.data = bias.data                    
+       
+        def set_classifier_params(self, params):
+            weight, bias = params
+            self.classifier.weight.data = weight.data
+            self.classifier.bias.data = bias.data
+        
+        def get_net_params(self):
+            params = []
+            for layer in self.layers:
+                params.append([layer.weight.detach().cpu(), layer.bias.detach().cpu()])
+            if self.last == True:
+                #if last net return layers and classifier
+                return params, [self.classifier.weight.detach().cpu(), self.classifier.bias.detach().cpu()]
+            #if not last net then return layers
+            return params
+        
         def mult_mu(direction, mu, steps):
             index ,counter = 0, 0
             #iterate through the directions    

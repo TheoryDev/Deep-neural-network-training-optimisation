@@ -64,10 +64,10 @@ def main(argv):
     #-----------hyper parameters
     batch_size = 256
     N = 1 #-note coarse model will be 2* this, fine model with be 4* this  
-    learn_rate_c = .25
-    f_step_c = .75
-    learn_rate_f = .25
-    f_step_f = .25 #coarse Verlet 64 could use .075
+    learn_rate_c = .1
+    f_step_c = .1
+    learn_rate_f = .05
+    f_step_f = .05 #coarse Verlet 64 could use .075
     epochs = 5#0#000  
       
     gamma = 0.02    

@@ -182,7 +182,7 @@ class complexNeuralNetwork:
             """        
         return times        
 
-    def optimise_SG_modules(self, y = None, multi=False):
+    def optimise_SG_modules(self, y=None, multi=False):
          """
          This function is used to optimise the SG modules. It works by 
          using the gradient of the instance parameter h_after. 
@@ -226,14 +226,10 @@ class complexNeuralNetwork:
         t_first = .0
         t_opt = 0.0    
         t_net = 0.0
-        
-        t_loss = 0.0
-        
-        #sub_back_t = 0.0
+        t_loss = 0.0        
         
         list_ones = []
         
-        #load_t = time.perf_counter()        
         for epoch in range(epochs):              
             
             epoch_loss = 0
@@ -273,11 +269,7 @@ class complexNeuralNetwork:
                 #calculate loss
                 torch.cuda.synchronize()
                 tmp_loss_t = time.perf_counter()
-                #if self.__conv == True:
-                 #   labels_y = labels[:,0,:0]*self.__nnets[0].num_classes
-                    
-                  #  loss = error_func(out, labels_y.round().long())
-                #else:
+               
                 loss = error_func(out, labels)  
                 torch.cuda.synchronize()
                 t_loss += time.perf_counter() - tmp_loss_t
@@ -323,8 +315,8 @@ class complexNeuralNetwork:
                 #optimise sg modules
                 torch.cuda.synchronize()
                 tmp = time.perf_counter()
-                if multi == False:                    
-                    syn_error += self.optimise_SG_modules(labels)
+                #if multi == False:                    
+                syn_error += self.optimise_SG_modules(labels)
                 torch.cuda.synchronize()
                 t_opt += time.perf_counter() - tmp        
                 epoch_loss += loss.item()               
@@ -351,13 +343,7 @@ class complexNeuralNetwork:
             plt.xlabel("epochs")
             plt.ylabel("loss")
             plt.show()
-        
-        if multi == True:
-            print("mult", multi)
-            #store the last batch labels to use for linear fit
-            for module in self.__sgmodules:
-                module.store_labels(labels)              
-  
+          
         #new time measurements
         master_t = time.perf_counter() - master_t
         m_non_back = master_t - master_back_t 
@@ -455,8 +441,7 @@ class complexNeuralNetwork:
         #create optimisers
         if self.__gpu == True:
             #send model to cpu to send to child processes
-            device = torch.device("cpu")
-            #print(self.__nnets)
+            device = torch.device("cpu")            
             for net in self.__nnets:                
                 net.to(device)    
                 net.props = None
@@ -572,10 +557,11 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module, error_func, parent
     data = pipeA.recv()   
         
     if model.gpu == True:
-        device = torch.device("cuda:0")
-        if name == -1:
+        #send model and sg module to i'th gpu
+        if name == -1: 
+            #use first gpu for last processor
             device = torch.device("cuda:0")            
-        else:
+        else:            
             device = torch.device("cuda:"+str(name+1))
             sg_module.set_device(device)
         model.to(device)

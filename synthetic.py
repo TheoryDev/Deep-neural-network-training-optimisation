@@ -70,8 +70,7 @@ class synthetic_module:
             self.__linSG.to(device)
         self.__h_before = None
         self.__h_after = None
-        self.__labels = None
-    
+            
     def set_device(self, device):
         self.__device = device
         self.__linSG.to(device)
@@ -79,8 +78,7 @@ class synthetic_module:
             self.__h_before = self.__h_before.to(device)
         if self.__h_after is not None:
             self.__h_after = self.__h_after.to(device)
-        if self.__labels is not None:
-            self.__labels = self.__labels.to(device)
+      
     
     def get_params(self):
         return self.__linSG.get_params()
@@ -99,10 +97,7 @@ class synthetic_module:
      
     def get_coefs(self):
         return self.__lin.coef_
-        
-    def store_labels(self, labels):
-        self.__labels = labels
-        
+                
     def get_input_before(self):        
         return self.__h_before
     
@@ -150,13 +145,14 @@ class synthetic_module:
         net before it. It propagates the synthetic gradient which approximates
         the graidents that h would normally recieved from further on in the network               
         """
+        #calculate synthetic gradient        
+        self.syn_grad = self.calculate_sg(self.__h_before, y)          
+        
         #if training coarse model backpropagate real gradient 
         if multi == True:           
             self.__h_before.backward(self.__h_after.grad)
             return
-        
-        #ecalculate synthetic gradient        
-        self.syn_grad = self.calculate_sg(self.__h_before, y)       
+                     
         #backpropagate synthetic gradient into sub-nn             
         self.__h_before.backward(self.syn_grad.detach())
         
@@ -178,8 +174,9 @@ class synthetic_module:
         error_func = nn.MSELoss()
         loss = error_func(self.syn_grad, grad)
         
-        #regularisation - may add in future    
-       
+        #no longer need self.syn_grad
+        self.syn_grad = None
+               
         #calculate loss
         loss.backward()        
         #update weights

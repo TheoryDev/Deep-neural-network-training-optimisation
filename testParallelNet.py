@@ -53,10 +53,10 @@ def main():
     batch_size = 256
     #-note coarse model will be 2* this, fine model with be 4* this    
     N = 1
-    learn_rate_c = .25
-    f_step_c = .75
-    learn_rate_f = .25
-    f_step_f = .25
+    learn_rate_c = .1
+    f_step_c = .1
+    learn_rate_f = .05
+    f_step_f = .05
     epochs = 5#10#0
       
     # 0.00005
@@ -80,10 +80,7 @@ def main():
     func_c = F.softmax    
     error_func = nn.CrossEntropyLoss()
     #------------------------------------------------------------------------------
-    
-    #initial optimisation parameters for sg modules
-    #sg_args = [torch.rand(size=(1,num_features)), torch.rand(size=(3,1)), torch.rand((1))]
-    
+        
     #init complex network
     complexNet = pa.complexNeuralNetwork(device, M, gpu, conv, in_channels)
     #init sub-neural networks
@@ -92,24 +89,22 @@ def main():
         
     #init SG modules
     complexNet.init_sgs(num_features=num_features, batch_size=batch_size)    
-        
+    print("-------------------------------- training coarse model ------------------------")    
     #train coarse model
     torch.cuda.synchronize()
     coarse_time = time.time()
     complexNet.train_multi_level(loader, error_func, learn_rate_c, epochs, begin, end
                      ,f_step_c, reg_f, alpha_f, reg_c, alpha_c, graph = False)
     torch.cuda.synchronize()
-    coarse_time = time.time() - coarse_time
-    
+    coarse_time = time.time() - coarse_time    
    
     coarse_result = complexNet.test(loader, begin = 0, end = 10000, f_step = f_step_c)
     
     complexNet.double_complex_net()
-    #print("double it")      
+          
         
     #train fine model            
-    
-    #train_network
+    print("-------------------------------- training fine model ------------------------")  
     torch.cuda.synchronize()
     start_time = time.perf_counter()
     train_time = complexNet.train(loader, error_func, learn_rate_f, epochs, begin, end

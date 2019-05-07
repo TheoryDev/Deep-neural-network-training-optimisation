@@ -1,4 +1,4 @@
-#Optimising the Training of Stable Deep Neural Network Architectures using Synthetic Gradients in PyTorch
+# Optimising the Training of Stable Deep Neural Network Architectures using Synthetic Gradients in PyTorch
 
 This work is an extension of the Thesis component of MSc Computing Science which I studied at Imperial College London. 
 The original project focused on implementing stable deep neural network architectures and optimising 

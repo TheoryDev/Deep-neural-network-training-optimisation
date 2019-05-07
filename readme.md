@@ -40,7 +40,7 @@ distSg.py
 ### Distributes training over multiple processes and also uses a multilevel learning scheme
 
 ```
-distMult.py  
+distMulti.py  
 ```
 
 ##The PVD code was not distributed across multiple processors but theoretical training times were calculated.

@@ -13,18 +13,18 @@ The synthetic gradients speed-up backpropagation by approximating the error betw
 and allows for the distribution of training across multiple processors.
 
 For this project you will need Python 3 and the following libraries:
-Pytorch 0.4.1
-torch
-torchvision
-autograd
-multiprocessing
-h5py
-sklearn
-numpy
-scipy
-os
+* Pytorch 0.4.1
+* torch
+* torchvision
+* autograd
+* multiprocessing
+* h5py
+* sklearn
+* numpy
+* scipy
+* os
 
-##Scripts for synthetic gradients:
+## Scripts for synthetic gradients:
 
 The scripts below build, train and test a DNN. The user is free to specify the 
 DNN architecture, hyperparameters and dataset within the script.

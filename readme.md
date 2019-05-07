@@ -43,7 +43,7 @@ distSg.py
 distMulti.py  
 ```
 
-##The PVD code was not distributed across multiple processors but theoretical training times were calculated.
+## The PVD code was not distributed across multiple processors but theoretical training times were calculated.
 
 ```
 PVD.py trains the DNN using the PVD algorithm. 

@@ -85,6 +85,9 @@ class Verlet(res.ResNet):
         
         if self.conv == True:
             #performs a convolution using the transpose of the filters
+            if type(layer) == torch.nn.modules.batchnorm.BatchNorm2d:
+                #batch norm weights cannot be transposed
+                return layer(x)
             x = torch.nn.functional.conv2d(x, layer.weight.transpose(2,3), layer.bias, padding = 1)
             return x
         

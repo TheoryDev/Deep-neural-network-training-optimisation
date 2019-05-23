@@ -116,7 +116,7 @@ class complexNeuralNetwork:
             s = self.create_sg(*self.__sgArgs)
             self.__sgmodules.append(s)    
     
-    def init_optimisers(self, learn_rate = 0.001):        
+    def init_optimisers(self, learn_rate = 0.001, decay_rate=0):        
         """
         It creates a list of optimisers for the sub-neural networks
         The optimisers will only include network parameters that have
@@ -129,7 +129,7 @@ class complexNeuralNetwork:
             #get netowrk params - capability to freeze layers
             params = filter(lambda param: param.requires_grad == True, net.parameters())
             #create optimiser for sub-network
-            self.__optimisers.append(optim.Adam(params, lr = learn_rate))
+            self.__optimisers.append(optim.Adam(params, lr = learn_rate, weight_decay=decay_rate))
         
         for s in self.__sgmodules:
             s.init_optimiser(learn_rate)
@@ -214,7 +214,11 @@ class complexNeuralNetwork:
         #data loading time
         m_load = 0.0
         #create list of optimisers 
-        self.init_optimisers(learn_rate)
+        decay_rate = 0
+        if reg_f == True:
+            decay_rate = alpha_f  
+        
+        self.init_optimisers(learn_rate, decay_rate)
        
         #loss tracking
         rounds, losses = [], []               
@@ -528,7 +532,8 @@ class complexNeuralNetwork:
             for i in range(self.__M-1):                
                 net_params, sg_params = params[i]
                 self.__nnets[i].set_net_params(net_params)
-                self.__nnets[i].to(device)                
+                self.__nnets[i].to(device)        
+                self.__nnets[i].set_device(device)
                 self.__sgmodules[i].set_params(sg_params)
                 self.__sgmodules[i].set_device(device)
             #get last net       
@@ -536,6 +541,7 @@ class complexNeuralNetwork:
             self.__nnets[-1].set_net_params(cWeights)
             self.__nnets[-1].set_classifier_params(cBias)
             self.__nnets[-1].to(device)
+            self.__nnets[-1].set_device(device)
         
         print("ended")       
              
@@ -565,7 +571,10 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module, error_func, parent
             device = torch.device("cuda:"+str(name+1))
             sg_module.set_device(device)
         model.to(device)
+        model.set_device(device)
    
+    scheduler = optim.lr_scheduler.StepLR(opt, 5, 0.9)
+    
     while data != None:                   
         
         inputs, labels = data
@@ -615,7 +624,8 @@ def proc_run(name, pipeA, pipeB, model, opt, step, sg_module, error_func, parent
                 grad = grad.to(device)
             
             sg_error = sg_module.optimise(labels, multi=False, para=True, gradient=grad)            
-    
+        
+       # scheduler.step()
         #get next batch
         data = pipeA.recv()   
     

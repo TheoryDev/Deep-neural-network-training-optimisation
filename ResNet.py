@@ -61,7 +61,8 @@ class ResNet(nn.Module):
                     #scales input to correct number of channels
                     #self.firstMask = nn.Conv2d(in_chns,n_filters,3, padding=1) 
                 for i in range(0, N):                    
-                    self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1))
+                    self.layers.append(nn.Conv2d(n_filters,n_filters,3, padding=1)) 
+                    self.layers.append(nn.BatchNorm2d(n_filters))
                 #classifier
                 if last == True:
                     self.classifier = nn.Linear(num_features*n_filters,num_classes) 
@@ -150,8 +151,13 @@ class ResNet(nn.Module):
                 params.append(mu)
             
             #create optimiser
-            optimiser = optim.SGD(params, lr = learn_rate)           
-                      
+            decay_rate = 0
+            if reg_f == True:
+                decay_rate = alpha_f           
+              
+            optimiser = optim.Adam(params, lr = learn_rate, weight_decay=decay_rate)           
+            scheduler = optim.lr_scheduler.StepLR(optimiser, 5, 0.9)
+            
             rounds, losses = [], []
             #train for epochs
             t_net = 0.0
@@ -193,11 +199,11 @@ class ResNet(nn.Module):
                     torch.cuda.synchronize()
                     forward_t += time.perf_counter() - tmp_forward
                     #add forward propagation regularisation term
-                    if reg_f == True:                        
-                        loss += alpha_f*self.layer_reg(f_step)
+                    #if reg_f == True:                        
+                     #   loss += alpha_f*self.layer_reg(f_step)
                     #add classifier regularisation term
-                    if reg_c == True:
-                        loss +=  alpha_c*self.class_reg()
+                    #if reg_c == True:
+                     #   loss +=  alpha_c*self.class_reg()
                   
                     torch.cuda.synchronize()
                     tmp_b = time.perf_counter()
@@ -219,7 +225,7 @@ class ResNet(nn.Module):
                 if first_round == True:                 
                    self.directions = ResNet.mult_mu(copy.deepcopy(directions), mu, steps)
                    mu.requires_grad = False
-                
+                #scheduler.step()
                 epoch_freq = i*trainloader.batch_size
                 if directions is None:
                     print("epoch: ", epoch+1, "loss: ", epoch_loss/epoch_freq)
@@ -434,7 +440,9 @@ class ResNet(nn.Module):
             """
             doubles the number of layers
             """
-            end = len(self.layers)*2
+            end = len(self.layers)
+            if self.conv == False:
+                end = len(self.layers)*2
             #make list of layers because moduleList does not have insert
             layers = [layer for layer in self.layers]
 
@@ -442,15 +450,21 @@ class ResNet(nn.Module):
                 #case for convolutional neural networks
                 if self.conv == True:
                     layers.insert(i, nn.Conv2d(self.n_filters,self.n_filters,3, padding=1))
+                    layers.insert(i+1, nn.BatchNorm2d(self.n_filters))
                 else:            
                     layers.insert(i, nn.Linear(self.num_features, self.num_features))
+            
             #re-encapsulate layers within container
-            self.layers = nn.ModuleList(layers)
+            self.layers = nn.ModuleList(layers).to(self.device)
             end -= 1
-
-            for i in np.arange(2, end, 2):
-                layers[i].weight.data = 0.5*(layers[i+1].weight.data+layers[i-1].weight.data)
-                layers[i].bias.data = 0.5*(layers[i+1].bias.data+layers[i-1].bias.data)
+           
+            for i in np.arange(2, end, 2):                
+                if self.conv == True:
+                    self.layers[i].weight.data = 0.5*(layers[i+2].weight.data+layers[i-2].weight.data)
+                    self.layers[i].bias.data = 0.5*(layers[i+2].bias.data+layers[i-2].bias.data)
+                else:    
+                    self.layers[i].weight.data = 0.5*(layers[i+1].weight.data+layers[i-1].weight.data)
+                    self.layers[i].bias.data = 0.5*(layers[i+1].bias.data+layers[i-1].bias.data)
                 
 
         def set_net_params(self, parameters):
@@ -474,6 +488,10 @@ class ResNet(nn.Module):
                 return params, [self.classifier.weight.detach().cpu(), self.classifier.bias.detach().cpu()]
             #if not last net then return layers
             return params
+        
+        def set_device(self, device):
+            self.device = device
+            
         
         def mult_mu(direction, mu, steps):
             index ,counter = 0, 0

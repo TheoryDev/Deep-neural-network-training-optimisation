@@ -44,7 +44,7 @@ class InMemDataLoader:
             testset = torchvision.datasets.MNIST(root, train=False, download=download, transform=transform)
         
         if self.dataset == "CIFAR10":
-            transform = transforms.Compose([transforms.ToTensor()])
+            transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465,), (0.2023, 0.1994, 0.2010,))])
             trainset = torchvision.datasets.CIFAR10(root, train=True, download=download, transform=transform)
             testset = torchvision.datasets.CIFAR10(root, train=False, download=download, transform=transform)
         

@@ -47,8 +47,8 @@ def main(argv):
     #---------------training data--------------------
       
          
-    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
-    choice = 'r'
+    dataset_name = "CIFAR10" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    choice = 'v'
     conv= True
     gpu = True
     
@@ -56,25 +56,25 @@ def main(argv):
     
     weights = None
     bias = None  
-    reg_f = False
+    reg_f = True
     reg_c = False   
-    alpha_f = 0.001
+    alpha_f = 0.0001
     alpha_c = 0.00025
     graph = False
     
     #-----------hyper parameters
     batch_size = 256
-    N = 2#32#128#56#-note  model will be 2* this 
-    learn_rate = 0.025
-    f_step = .025
-    epochs = 10#10#000  
+    N = 32#32#128#56#-note  model will be 2* this 
+    learn_rate = 0.001
+    f_step = .05
+    epochs = 50#10#000  
       
     gamma = 0.02    
     begin = 0
     end = 10000#50#000
     
     #batch_size = 64
-    func_f = torch.tanh
+    func_f = torch.nn.ReLU()
     func_c = F.softmax    
     error_func = nn.CrossEntropyLoss()        
             

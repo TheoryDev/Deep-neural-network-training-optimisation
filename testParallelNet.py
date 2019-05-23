@@ -52,12 +52,12 @@ def main():
     #-----------hyper parameters
     batch_size = 256
     #-note coarse model will be 2* this, fine model with be 4* this    
-    N = 1
+    N = 2
     learn_rate_c = .1
     f_step_c = .1
     learn_rate_f = .05
     f_step_f = .05
-    epochs = 5#10#0
+    epochs = 1#5#10#0
       
     # 0.00005
     alpha_f = 0.001
@@ -65,7 +65,7 @@ def main():
     gamma = 0.05
    
     begin = 0
-    end = 10000  
+    end = 1#0000  
            
     # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     

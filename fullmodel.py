@@ -41,31 +41,30 @@ def main(argv):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(device)
     
-    dataset_name = "MNIST" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
+    dataset_name = "CIFAR10" # choose from MNIST, CIFAR10, CIFAR100, ELLIPSE, SWISS
     #choose model
-    choice = "r" # "v"
+    choice = "v" # "v"
     gpu = True
     conv = True
     
-    batch_size = 64 #1024
+    batch_size = 256 #1024
     #hyper parameters
-    N = 4
-    learn_rate = 0.5#0.05
-    step = .15
-    epochs = 10#20#0#50
+    N = 64
+    learn_rate = 0.001#0.05
+    step = .01
+    epochs = 50#20#0#50
     begin = 0
     end = 10000
-    reg_f = False
+    reg_f = True
     reg_c = False
-    graph = True
+    graph = False
     #0.059..
     
-    alpha_f = 0.01
+    alpha_f = 0.0001
     alpha_c = 0.01
     
     error_func=nn.CrossEntropyLoss()    
-    func_f = torch.tanh
-
+    func_f = torch.nn.ReLU()
 
     func_c = F.softmax
     #load trainset
@@ -118,11 +117,11 @@ def chooseModel(dataset, device, N, func_f, func_c, gpu, choice, last=True,
     if choice == 'v':
                 print("v")
                 model = ver.Verlet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
-                                   , conv, first, in_chns, n_filters)    
+                                   , conv, first, in_channels, n_filters)    
     else:
                 print("r")
                 model = res.ResNet(device, N, num_features, num_classes, func_f, func_c, weights, bias, gpu, last
-                                   , conv, first, in_chns, n_filters)    
+                                   , conv, first, in_channels, n_filters)    
     return model
     
 

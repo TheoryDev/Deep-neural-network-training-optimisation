@@ -19,9 +19,9 @@ def main():
     print("CIFAR10 stored in HDF5")
     
     #STORE CIFAR 100
-    myMemLoader = dl.InMemDataLoader(dataset= "CIFAR100")
-    myMemLoader.storeAsHDF5()
-    print("CIFAR100 stored in HDF5")
+    #myMemLoader = dl.InMemDataLoader(dataset= "CIFAR100")
+  #  myMemLoader.storeAsHDF5()
+  #  print("CIFAR100 stored in HDF5")
     
     
     #THE CODE BELOW WILL BE USED LATER FOR CNNs
